@@ -1,17 +1,18 @@
 package gofetch
 
 import (
-	"github.com/dancannon/gofetch/request"
+	"github.com/davecgh/go-spew/spew"
 	"testing"
 )
 
 func TestRequest(t *testing.T) {
-	var r request.Requester = &request.PhantomRequest{}
-
-	content, err := r.Send("http://google.com")
+	res, err := Fetch("http://getbootstrap.com/examples/starter-template/")
+	// res, err := Fetch("http://www.youtube.com/watch?v=C0DPdy98e4c")
+	doc := prepareDocument(res)
+	// response, err := r.Send("http://hn.meteor.com")
 
 	if err != nil {
-		t.Error("Error was returned(%s)", err)
+		t.Errorf("Error was returned(%s)", err)
 	}
-	t.Log(content)
+	spew.Dump(doc)
 }

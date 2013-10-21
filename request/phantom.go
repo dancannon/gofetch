@@ -34,10 +34,10 @@ const scriptTmpl string = `
     })
 `
 
-func (r *PhantomRequest) Send(url string) (string, error) {
+func (r *PhantomRequest) Send(url string) (map[string]interface{}, error) {
 	f, err := ioutil.TempFile("", "gofetch")
 	if err != nil {
-		return "", err
+		return map[string]interface{}{}, err
 	}
 
 	defer f.Close()
@@ -46,7 +46,7 @@ func (r *PhantomRequest) Send(url string) (string, error) {
 	// Write script to temp file
 	tmpl, err := template.New("phantom_script").Parse(scriptTmpl)
 	if err != nil {
-		return "", err
+		return map[string]interface{}{}, err
 	}
 
 	err = tmpl.Execute(f, map[string]string{
@@ -55,7 +55,7 @@ func (r *PhantomRequest) Send(url string) (string, error) {
 		"waitTime":  "3000",
 	})
 	if err != nil {
-		return "", err
+		return map[string]interface{}{}, err
 	}
 
 	var out bytes.Buffer
@@ -64,23 +64,23 @@ func (r *PhantomRequest) Send(url string) (string, error) {
 	cmd.Stdout = &out
 	err = cmd.Run()
 	if err != nil {
-		return "", err
+		return map[string]interface{}{}, err
 	}
 
 	var response map[string]interface{}
 	// Decode and return response
 	err = json.Unmarshal(out.Bytes(), &response)
 	if err != nil {
-		return "", err
+		return map[string]interface{}{}, err
 	}
 
 	if err, ok := response["error"]; ok {
-		return "", fmt.Errorf(err.(string))
+		return map[string]interface{}{}, fmt.Errorf(err.(string))
 	}
 
 	if _, ok := response["content"]; !ok {
-		return "", fmt.Errorf("Unexpected response")
+		return map[string]interface{}{}, fmt.Errorf("Unexpected response")
 	}
 
-	return response["content"].(string), nil
+	return response, nil
 }
