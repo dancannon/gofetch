@@ -5,6 +5,8 @@ import (
 	"github.com/davecgh/go-spew/spew"
 	"log"
 	"net/http"
+	"net/url"
+	"strings"
 )
 
 var scs spew.ConfigState = spew.ConfigState{Indent: "\t"}
@@ -55,7 +57,7 @@ func newParseState() *parseState {
 }
 
 func prepareDocument(r Result) *Document {
-	doc := NewDocument()
+	doc := NewDocument(r.Url)
 	s := newParseState()
 
 	n, err := html.Parse(r.Body)
@@ -68,19 +70,65 @@ func prepareDocument(r Result) *Document {
 	return doc
 }
 
+var (
+	ignorableIdentifiers = []string{
+		"comment", "extra", "foot", "head", "nav", "menu", "sidebar", "page",
+		"breadcrumb", "hide", "hidden",
+	}
+)
+
 func prepareNode(s *parseState, n *html.Node, d *Document) {
+	if n.Data == "script" {
+		s.state = "inline"
+		n.Parent.RemoveChild(n)
+		return
+	}
 	if n.Type == html.ElementNode {
+		tmpAttrs := []html.Attribute{}
+		for _, a := range n.Attr {
+			if a.Key == "id" || a.Key == "class" {
+				for _, ident := range ignorableIdentifiers {
+					if strings.Contains(strings.ToLower(a.Val), ident) {
+						n.Parent.RemoveChild(n)
+						s.state = "inline"
+						return
+					}
+				}
+			} else if a.Key == "href" || a.Key == "src" {
+				// Attempt to fix URLs
+				urlb, err := url.Parse(d.Url)
+				if err != nil {
+					continue
+				}
+				urlr, err := url.Parse(a.Val)
+				if err != nil {
+					continue
+				}
+				a.Val = urlb.ResolveReference(urlr).String()
+			}
+
+			tmpAttrs = append(tmpAttrs, a)
+		}
+		n.Attr = tmpAttrs
+
 		switch n.Data {
 		case "title":
 			s.state = "title"
-			scs2.Dump(n)
 		case "meta":
 			for _, a := range n.Attr {
 				d.Meta[a.Key] = a.Val
 			}
+		case "body":
+			d.Body = n
+		// Remove un-needed tags
+		case "script", "style", "link", "noscript":
+			n.Parent.RemoveChild(n)
+			s.state = "inline"
+			return
 		}
 	} else if n.Type == html.DocumentNode {
 	} else if n.Type == html.CommentNode {
+		n.Parent.RemoveChild(n)
 	} else if n.Type == html.DoctypeNode {
 	} else if n.Type == html.TextNode {
 		switch s.state {
@@ -98,5 +146,4 @@ func prepareNode(s *parseState, n *html.Node, d *Document) {
 
 	// Run after the end tag
 	s.state = "inline"
-
 }
