@@ -5,7 +5,7 @@ type PageType string
 const (
 	Unknown   PageType = "unknown"
 	PlainText          = "plaintext"
-	Article            = "article"
+	Text               = "text"
 	Audio              = "audio"
 	Image              = "image"
 	Video              = "video"

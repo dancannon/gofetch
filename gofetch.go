@@ -6,6 +6,7 @@ import (
 	"log"
 	"net/http"
 	"net/url"
+	"regexp"
 	"strings"
 )
 
@@ -72,8 +73,10 @@ func prepareDocument(r Result) *Document {
 
 var (
 	ignorableIdentifiers = []string{
-		"comment", "extra", "foot", "head", "nav", "menu", "sidebar", "page",
-		"breadcrumb", "hide", "hidden",
+		"comment", "extra", "foot", "head", "topbar", "nav", "menu", "sidebar", "page",
+		"breadcrumb", "hide", "hidden", "no-?display", "\\bad\\b", "advert", "promo",
+		"featured", "toolbox", "toolbar", "tools", "actions", "buttons", "related",
+		"share", "social", "pop",
 	}
 )
 
@@ -84,47 +87,51 @@ func prepareNode(s *parseState, n *html.Node, d *Document) {
 		return
 	}
 	if n.Type == html.ElementNode {
-		tmpAttrs := []html.Attribute{}
-		for _, a := range n.Attr {
-			if a.Key == "id" || a.Key == "class" {
-				for _, ident := range ignorableIdentifiers {
-					if strings.Contains(strings.ToLower(a.Val), ident) {
-						n.Parent.RemoveChild(n)
-						s.state = "inline"
-						return
-					}
-				}
-			} else if a.Key == "href" || a.Key == "src" {
-				// Attempt to fix URLs
-				urlb, err := url.Parse(d.Url)
-				if err != nil {
-					continue
-				}
-				urlr, err := url.Parse(a.Val)
-				if err != nil {
-					continue
-				}
-				a.Val = urlb.ResolveReference(urlr).String()
-			}
-
-			tmpAttrs = append(tmpAttrs, a)
-		}
-		n.Attr = tmpAttrs
-
-		switch n.Data {
-		case "title":
-			s.state = "title"
-		case "meta":
-			for _, a := range n.Attr {
-				d.Meta[a.Key] = a.Val
-			}
-		case "body":
+		// Ensure that the body tag is added to the result document
+		if n.Data == "body" {
 			d.Body = n
-		// Remove un-needed tags
-		case "script", "style", "link", "noscript":
-			n.Parent.RemoveChild(n)
-			s.state = "inline"
-			return
+		} else {
+			tmpAttrs := []html.Attribute{}
+			for _, a := range n.Attr {
+				if a.Key == "id" || a.Key == "class" {
+					for _, ident := range ignorableIdentifiers {
+						matched, _ := regexp.MatchString(ident, strings.ToLower(a.Val))
+						if matched {
+							n.Parent.RemoveChild(n)
+							s.state = "inline"
+							return
+						}
+					}
+				} else if a.Key == "href" || a.Key == "src" {
+					// Attempt to fix URLs
+					urlb, err := url.Parse(d.Url)
+					if err != nil {
+						continue
+					}
+					urlr, err := url.Parse(a.Val)
+					if err != nil {
+						continue
+					}
+					a.Val = urlb.ResolveReference(urlr).String()
+				}
+
+				tmpAttrs = append(tmpAttrs, a)
+			}
+			n.Attr = tmpAttrs
+
+			switch n.Data {
+			case "title":
+				s.state = "title"
+			case "meta":
+				for _, a := range n.Attr {
+					d.Meta[a.Key] = a.Val
+				}
+			// Remove un-needed tags
+			case "script", "style", "link", "noscript":
+				n.Parent.RemoveChild(n)
+				s.state = "inline"
+				return
+			}
 		}
 	} else if n.Type == html.DocumentNode {
 	} else if n.Type == html.CommentNode {
@@ -136,7 +143,6 @@ func prepareNode(s *parseState, n *html.Node, d *Document) {
 			d.Title = n.Data
 		}
 	} else {
-		scs.Dump(n)
 		panic("Unknown node type")
 	}
 
