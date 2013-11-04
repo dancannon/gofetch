@@ -60,9 +60,9 @@ func (g *TextDensityGuesser) process(n *html.Node) textDensityResult {
 		for c := n.FirstChild; c != nil; c = c.NextSibling {
 			cres := g.process(c)
 
-			// if cres.Length == 0 {
-			// 	continue
-			// }
+			if cres.Length == 0 {
+				continue
+			}
 
 			res.Length += cres.Length
 			res.Elements += cres.Elements

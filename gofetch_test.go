@@ -12,12 +12,11 @@ func TestRequest(t *testing.T) {
 	// res, err := Fetch("http://getbootstrap.com/examples/jumbotron/")
 	// res, err := Fetch("http://getbootstrap.com/examples/carousel/")
 	// res, err := Fetch("http://www.theguardian.com/technology/2013/nov/01/caa-easa-electronic-devices-flight-take-off-landing")
-	// res, err := Fetch("http://www.birmingham.ac.uk/index.aspx")
+	res, err := Fetch("http://www.birmingham.ac.uk/index.aspx")
 	// res, err := Fetch("http://www.birmingham.ac.uk/university/index.aspx")
-	// res, err := Fetch("http://www.youtube.com/watch?v=C0DPdy98e4c")
 	// res, err := Fetch("https://www.google.co.uk/?gws_rd=cr&ei=IMtzUuLkI-Hb0QX-woD4CA#q=test")
 	// res, err := Fetch("http://imgur.com")
-	res, err := Fetch("http://imgur.com/rXmjOMe")
+	// res, err := Fetch("http://imgur.com/rXmjOMe")
 	if err != nil {
 		t.Errorf("Error was returned(%s)", err)
 	}
