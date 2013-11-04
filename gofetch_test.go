@@ -49,7 +49,15 @@ func TestRequest(t *testing.T) {
 		}
 	}
 
-	spew.Dump(highest)
-	extractor := TextExtractor{}
-	extractor.Extract(doc)
+	spew.Printf("Guess: %s(%d)", highest.Type, highest.Probability)
+
+	switch highest.Type {
+	case Text:
+		extractor := TextExtractor{}
+		spew.Dump(extractor.Extract(doc))
+	case Image, Gallery:
+		spew.Dump(highest.Result)
+	default:
+		spew.Dump("Unknown page type")
+	}
 }
