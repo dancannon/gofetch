@@ -5,9 +5,8 @@ import (
 )
 
 type Result struct {
-	Url         string
-	PageType    PageType
-	Body        io.ReadCloser
-	Content     interface{}
-	ContentHash string
+	Url      string
+	PageType PageType
+	Body     io.ReadCloser
+	Content  interface{}
 }

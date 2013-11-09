@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<config>
+    <rules>
+        <provider id="directory">
+            <parameter id="directory">./rules</parameter>
+        </provider>
+        <rule id="imgur" extractor="gofetch.selector.extractor">
+            <url>http://imgur.com/[a-zA-Z0-9]+</url>
+            <parameter id="selector">#image img</parameter>
+            <parameter id="attribute">src</parameter>
+        </rule>
+    </rules>
+</config>
