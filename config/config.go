@@ -1,4 +1,4 @@
-package gofetch
+package config
 
 import (
 	"encoding/xml"
@@ -12,14 +12,14 @@ type Config struct {
 	Rules         []Rule               `xml:"rules>rule"`
 }
 
-type configParameter struct {
+type Parameter struct {
 	Key   string `xml:"id,attr"`
 	Value string `xml:",chardata"`
 }
 
-type configParameters []configParameter
+type ParameterSlice []Parameter
 
-func (p configParameters) toMap() map[string]string {
+func (p ParameterSlice) ToMap() map[string]string {
 	m := map[string]string{}
 
 	for _, e := range p {
@@ -28,8 +28,6 @@ func (p configParameters) toMap() map[string]string {
 
 	return m
 }
-
-var config = LoadConfig("config.xml")
 
 func LoadConfig(path string) Config {
 	var config Config

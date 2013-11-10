@@ -2,19 +2,15 @@ package gofetch
 
 import (
 	"errors"
+	"github.com/dancannon/gofetch/config"
 )
 
-type ruleProviderConfig struct {
-	Id         string            `xml:"id"`
-	Parameters []configParameter `xml:"parameter"`
-}
-
 type RuleProvider interface {
-	Setup([]configParameter)
-	Provide() []Rule
+	Setup([]config.Parameter)
+	Provide() []config.Rule
 }
 
-func loadProvider(key string, params []configParameter) (RuleProvider, error) {
+func loadProvider(key string, params []config.Parameter) (RuleProvider, error) {
 	var provider RuleProvider
 
 	switch key {
@@ -32,7 +28,7 @@ type DirectoryRuleProvider struct {
 	directory string
 }
 
-func (p *DirectoryRuleProvider) Setup(params []configParameter) {
+func (p *DirectoryRuleProvider) Setup(params []config.Parameter) {
 	// Check that the provider has the correct parameters
 	for _, param := range params {
 		if param.Key == "directory" {
@@ -44,6 +40,6 @@ func (p *DirectoryRuleProvider) Setup(params []configParameter) {
 	panic("The rules directory must be passed to the Xml Rule Provider")
 }
 
-func (p *DirectoryRuleProvider) Provide() []Rule {
-	return []Rule{}
+func (p *DirectoryRuleProvider) Provide() []config.Rule {
+	return []config.Rule{}
 }

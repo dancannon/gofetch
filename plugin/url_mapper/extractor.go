@@ -8,30 +8,21 @@ import (
 )
 
 type Extractor struct {
-	pattern     string
-	replacement string
+	values
 }
 
 func (e *Extractor) Id() string {
 	return "gofetch.url_mapper.extractor"
 }
 
-func (e *Extractor) Setup(config map[string]string) error {
-	if param, ok := config["pattern"]; ok {
-		e.pattern = param
-	} else {
-		return errors.New(fmt.Sprintf("The %s extractor must be passed a regular expression pattern", e.Id()))
-	}
-	if param, ok := config["replacement"]; ok {
-		e.replacement = param
-	} else {
-		return errors.New(fmt.Sprintf("The %s extractor must be passed a replacement string", e.Id()))
-	}
+func (e *Extractor) Setup(values []Value) error {
+	e.values = values
 
 	return nil
 }
 
-func (e *Extractor) Extract(d *document.Document) (interface{}, error) {
-	re := regexp.Compile(e.pattern)
-	return re.ReplaceAllString(d.Url, e.replacement)
+func (e *Extractor) Extract(d *document.Document) (map[string]interface{}, error) {
+	// re := regexp.Compile(e.pattern)
+	// return re.ReplaceAllString(d.Url, e.replacement)
+	return map[string]interface{}{}, nil
 }

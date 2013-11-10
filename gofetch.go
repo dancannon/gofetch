@@ -2,6 +2,7 @@ package gofetch
 
 import (
 	"fmt"
+	"github.com/dancannon/gofetch/config"
 	"github.com/dancannon/gofetch/document"
 	"github.com/davecgh/go-spew/spew"
 	"net/http"
@@ -11,20 +12,21 @@ import (
 
 var scs spew.ConfigState = spew.ConfigState{Indent: "\t"}
 var scs2 spew.ConfigState = spew.ConfigState{Indent: "\t", MaxDepth: 2}
+var c = config.LoadConfig("config.xml")
 
 func Fetch(url string) (Result, error) {
 	// Load all the rules
-	for _, pc := range config.RuleProviders {
+	for _, pc := range c.RuleProviders {
 		provider, err := loadProvider(pc.Id, pc.Parameters)
 		if err != nil {
 			continue
 		}
 
-		config.Rules = append(config.Rules, provider.Provide()...)
+		c.Rules = append(c.Rules, provider.Provide()...)
 	}
 
 	// Sort the rules
-	sort.Sort(RuleSlice(config.Rules))
+	sort.Sort(config.RuleSlice(c.Rules))
 
 	// Make request
 	res, err := http.Get(url)
@@ -63,15 +65,19 @@ func parseHtml(res Result) Result {
 	cleanDocument(doc)
 
 	// Iterate through all registered extractors and find one that can be used
-	for _, rule := range config.Rules {
+	for _, rule := range c.Rules {
 		for _, url := range rule.Urls {
 			re := regexp.MustCompile(url)
 			if re.MatchString(doc.Url) {
 				if extractor, ok := extractors[rule.Extractor]; ok {
-					extractor.Setup(configParameters(rule.Parameters).toMap())
+					err := extractor.Setup(rule.Values)
+					if err != nil {
+						panic(err.Error())
+					}
+
 					content, err := extractor.Extract(doc)
 					if err != nil {
-						panic("Error extracting page content")
+						panic(err.Error())
 					}
 					res.Content = content
 					return res

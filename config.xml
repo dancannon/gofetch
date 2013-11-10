@@ -4,10 +4,21 @@
         <provider id="directory">
             <parameter id="directory">./rules</parameter>
         </provider>
-        <rule id="imgur" extractor="gofetch.selector.extractor">
+        <rule id="text_universal" extractor="gofetch.article.extractor">
+            <url>.*</url>
+        </rule>
+        <rule id="imgur" extractor="gofetch.selector.extractor" priority="1">
             <url>http://imgur.com/[a-zA-Z0-9]+</url>
-            <parameter id="selector">#image img</parameter>
-            <parameter id="attribute">src</parameter>
+            <values>
+                <value name="meta">
+                    <value name="test" value="test" />
+                </value>
+                <value name="type" value="image" />
+                <value name="src">
+                    <parameter id="selector">#image img</parameter>
+                    <parameter id="attribute">src</parameter>
+                </value>
+            </values>
         </rule>
     </rules>
 </config>

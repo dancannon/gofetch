@@ -1,11 +1,12 @@
 package gofetch
 
 import (
+	"github.com/dancannon/gofetch/config"
 	"github.com/dancannon/gofetch/document"
 )
 
 type Extractor interface {
 	Id() string
-	Setup(map[string]string) error
-	Extract(*document.Document) (interface{}, error)
+	Setup([]config.Value) error
+	Extract(*document.Document) (map[string]interface{}, error)
 }
