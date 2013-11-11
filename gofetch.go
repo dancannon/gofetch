@@ -26,7 +26,7 @@ func Fetch(url string) (Result, error) {
 	}
 
 	// Sort the rules
-	sort.Sort(config.RuleSlice(c.Rules))
+	sort.Sort(sort.Reverse(config.RuleSlice(c.Rules)))
 
 	// Make request
 	res, err := http.Get(url)
