@@ -6,21 +6,21 @@ import (
 )
 
 type RuleProvider interface {
-	Setup([]config.Parameter)
+	Setup(map[string]string)
 	Provide() []config.Rule
 }
 
-func loadProvider(key string, params []config.Parameter) (RuleProvider, error) {
+func loadProvider(pc config.ProviderConfig) (RuleProvider, error) {
 	var provider RuleProvider
 
-	switch key {
+	switch pc.Id {
 	case "directory":
 		provider = &DirectoryRuleProvider{}
 	default:
 		return nil, errors.New("No provider was found for the given key")
 	}
 
-	provider.Setup(params)
+	provider.Setup(pc.Parameters)
 	return provider, nil
 }
 
@@ -28,13 +28,11 @@ type DirectoryRuleProvider struct {
 	directory string
 }
 
-func (p *DirectoryRuleProvider) Setup(params []config.Parameter) {
+func (p *DirectoryRuleProvider) Setup(params map[string]string) {
 	// Check that the provider has the correct parameters
-	for _, param := range params {
-		if param.Key == "directory" {
-			p.directory = param.Value
-			return
-		}
+	if directory, ok := params["directory"]; ok {
+		p.directory = directory
+		return
 	}
 
 	panic("The rules directory must be passed to the Xml Rule Provider")

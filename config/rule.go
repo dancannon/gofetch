@@ -1,22 +1,15 @@
 package config
 
 type Rule struct {
-	Extractor string   `xml:"extractor,attr"`
-	Urls      []string `xml:"url"`
-	Values    []Value  `xml:"values>value"`
-	Priority  int      `xml:"priority,attr"`
+	Id       string                 `json:"id"`
+	Urls     []string               `json:"urls"`
+	Values   map[string]interface{} `json:"values"`
+	Priority int                    `json:"priority,omitempty"`
 }
 
-type Value struct {
-	Name       string      `xml:"name,attr"`
-	Value      string      `xml:"value,attr"`
-	Parameters []Parameter `xml:"parameter"`
-	Children   []Value     `xml:"value"`
-}
-
-type ruleProviderConfig struct {
-	Id         string      `xml:"id"`
-	Parameters []Parameter `xml:"parameter"`
+type ProviderConfig struct {
+	Id         string            `json:"provider"`
+	Parameters map[string]string `json:"params"`
 }
 
 type RuleSlice []Rule

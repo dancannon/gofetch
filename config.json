@@ -1,0 +1,50 @@
+{
+    "providers": [
+        {
+            "provider": "directory",
+            "params": {
+                "directory": "./rules"
+            }
+        },
+        {
+            "provider": "rethinkdb",
+            "params": {
+                "host": "localhost",
+                "port": "28015"
+            }
+        }
+    ],
+    "rules": [
+        {
+    		"id": "text_universal",
+            "priority": 0,
+            "urls": [
+                ".*"
+            ],
+            "values": {
+                "@extractor": {
+                	"id": "gofetch.article.extractor"
+                }
+            }
+        },
+        {
+        	"id": "imgur",
+            "priority": 1,
+            "urls": [
+                "http://imgur.com/[a-zA-Z0-9]+"
+            ],
+            "values": {
+                "type": "image",
+                "src": {
+                    "@extractor": {
+                        "id": "gofetch.selector.extractor",
+                        "params": {
+                            "selector": "#image img",
+                            "attribute": "src"
+                        }
+                    }
+                }
+            }
+        }
+    ]
+}

@@ -4,105 +4,73 @@ import (
 	"errors"
 	"fmt"
 	"github.com/PuerkitoBio/goquery"
-	"github.com/dancannon/gofetch/config"
 	"github.com/dancannon/gofetch/document"
 )
 
 type Extractor struct {
-	values []value
-}
-
-type value struct {
-	name      string
-	value     string
-	attribute string
 	selector  string
-	children  []value
+	attribute string
 }
 
 func (e *Extractor) Id() string {
 	return "gofetch.selector.extractor"
 }
 
-func (e *Extractor) Setup(values []config.Value) error {
-	var err error
-	e.values, err = e.validateValueNodes(values)
-	return err
-}
-
-func (e *Extractor) validateValueNodes(values []config.Value) ([]value, error) {
-	var err error
-
-	vs := []value{}
-	for _, cv := range values {
-		// Validate node
-		v := value{}
-		v.name = cv.Name
-		v.value = cv.Value
-
-		if cv.Name == "" {
-			return vs, errors.New(fmt.Sprintf("Each value must have have at least a name"))
-		}
-
-		// If the node already has a value then skip validation
-		if cv.Value == "" {
-			if len(cv.Children) > 0 {
-				// Validate children nodes
-				v.children, err = e.validateValueNodes(cv.Children)
-				if err != nil {
-					return vs, err
-				}
-				vs = append(vs, v)
-			} else {
-				m := config.ParameterSlice(cv.Parameters).ToMap()
-				if param, ok := m["attribute"]; ok {
-					v.attribute = param
-				}
-				if param, ok := m["selector"]; ok {
-					v.selector = param
-				} else {
-					return vs, errors.New(fmt.Sprintf("The %s extractor must be passed a CSS selector", e.Id()))
-				}
-			}
-		}
-
-		vs = append(vs, v)
+func (e *Extractor) Setup(config map[string]interface{}) error {
+	// Validate config
+	if selector, ok := config["selector"]; !ok {
+		return errors.New(fmt.Sprintf("The %s extractor must be passed a CSS selector", e.Id()))
+	} else {
+		e.selector = selector.(string)
+	}
+	if attribute, ok := config["attribute"]; ok {
+		e.attribute = attribute.(string)
 	}
 
-	return vs, nil
+	return nil
 }
 
-func (e *Extractor) Extract(d *document.Document) (map[string]interface{}, error) {
+func (e *Extractor) Extract(d *document.Document) (interface{}, error) {
 	doc := goquery.NewDocumentFromNode(d.Body)
 
-	return e.extractValues(doc, e.values), nil
-}
-
-func (e *Extractor) extractValues(doc *goquery.Document, values []value) map[string]interface{} {
-	m := map[string]interface{}{}
-
-	for _, v := range values {
-		if v.value == "" {
-			if len(v.children) > 0 {
-				m[v.name] = e.extractValues(doc, v.children)
-			} else {
-				n := doc.Find(v.selector)
-				if n.Length() == 0 {
-					continue
-				}
-
-				if v.attribute == "" {
-					m[v.name] = n.First().Text()
-				} else {
-					attr, _ := n.First().Attr(v.attribute)
-
-					m[v.name] = attr
-				}
-			}
-		} else {
-			m[v.name] = v.value
-		}
+	n := doc.Find(e.selector)
+	if n.Length() == 0 {
+		return nil, errors.New(fmt.Sprintf("Selector '%s' not found", e.selector))
 	}
 
-	return m
+	if e.attribute == "" {
+		return n.First().Text(), nil
+	} else {
+		attr, _ := n.First().Attr(e.attribute)
+		return attr, nil
+	}
 }
+
+// func (e *Extractor) extractValues(doc *goquery.Document, values []value) map[string]interface{} {
+// 	m := map[string]interface{}{}
+
+// 	for _, v := range values {
+// 		if v.value == "" {
+// 			if len(v.children) > 0 {
+// 				m[v.name] = e.extractValues(doc, v.children)
+// 			} else {
+// 				n := doc.Find(v.selector)
+// 				if n.Length() == 0 {
+// 					continue
+// 				}
+
+// 				if v.attribute == "" {
+// 					m[v.name] = n.First().Text()
+// 				} else {
+// 					attr, _ := n.First().Attr(v.attribute)
+
+// 					m[v.name] = attr
+// 				}
+// 			}
+// 		} else {
+// 			m[v.name] = v.value
+// 		}
+// 	}
+
+// 	return m
+// }

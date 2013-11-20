@@ -2,7 +2,6 @@ package article
 
 import (
 	"code.google.com/p/go.net/html"
-	"github.com/dancannon/gofetch/config"
 	"github.com/dancannon/gofetch/document"
 	"regexp"
 	"strings"
@@ -18,7 +17,7 @@ func (e *Extractor) Id() string {
 	return "gofetch.article.extractor"
 }
 
-func (e *Extractor) Setup(_ []config.Value) error {
+func (e *Extractor) Setup(_ map[string]interface{}) error {
 	e.blocks = []string{}
 	e.currentBlock = ""
 	e.flush = false
@@ -26,7 +25,7 @@ func (e *Extractor) Setup(_ []config.Value) error {
 	return nil
 }
 
-func (e *Extractor) Extract(d *document.Document) (map[string]interface{}, error) {
+func (e *Extractor) Extract(d *document.Document) (interface{}, error) {
 	var f func(*html.Node)
 	f = func(n *html.Node) {
 		if n.Type == html.ElementNode {
