@@ -9,7 +9,7 @@ import (
 )
 
 var (
-	ignorableIdentifiers = "comment|extra|foot|topbar|nav|menu|sidebar|page|breadcrumb|hide|hidden|no-?display|\\bad\\b|advert|promo,featured|toolbox|toolbar|tools|actions|buttons|relatedshare|social|facebook|twitter|google|pop|links|meta$|scroll|shoutbox|sponsor|contact|form|community|subscribe"
+	ignorableIdentifiers = "comment|extra|foot|topbar|nav|menu|sidebar|breadcrumb|hide|hidden|no-?display|\\bad\\b|advert|promo|featured|toolbox|toolbar|tools|actions|buttons|related|share|social|facebook|twitter|google|pop|links|meta$|scroll|shoutbox|sponsor|contact|form|community|subscribe"
 	ignorableRegex       = regexp.MustCompile(ignorableIdentifiers)
 )
 
