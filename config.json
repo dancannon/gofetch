@@ -1,19 +1,19 @@
 {
-    "providers": [
-        {
-            "provider": "directory",
-            "params": {
-                "directory": "./rules"
-            }
-        },
-        {
-            "provider": "rethinkdb",
-            "params": {
-                "host": "localhost",
-                "port": "28015"
-            }
-        }
-    ],
+    // "providers": [
+    //     {
+    //         "provider": "directory",
+    //         "params": {
+    //             "directory": "./rules"
+    //         }
+    //     },
+    //     {
+    //         "provider": "rethinkdb",
+    //         "params": {
+    //             "host": "localhost",
+    //             "port": "28015"
+    //         }
+    //     }
+    // ],
     "rules": [
         {
     		"id": "text_universal",
