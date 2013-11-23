@@ -1,4 +1,4 @@
-package article
+package text
 
 import (
 	"code.google.com/p/go.net/html"
@@ -21,9 +21,23 @@ func (e *Extractor) Extract(d *document.Document) (interface{}, error) {
 	blocks := e.parseDocument(d)
 	blocks = e.clasifyBlocks(blocks)
 
-	// Get content
+	title := ""
 	content := ""
+
 	for _, block := range blocks {
+		// Find title/header
+		if title == "" && block.Type == Content &&
+			(block.Tag == "h1" ||
+				block.Tag == "h2" ||
+				block.Tag == "h3" ||
+				block.Tag == "h4" ||
+				block.Tag == "h5" ||
+				block.Tag == "h6") {
+			title = block.Text
+			block.Type = Title
+		}
+
+		// Get content
 		if block.Type == Content {
 			content += block.Text + "\n"
 		}
@@ -33,14 +47,17 @@ func (e *Extractor) Extract(d *document.Document) (interface{}, error) {
 }
 
 func (e *Extractor) parseDocument(d *document.Document) []TextBlock {
-	inLink := false
 	blocks := []TextBlock{}
 	currentBlock := TextBlock{}
 	flush := false
+	inLink := false
+	currTag := ""
 
 	var f func(*html.Node)
 	f = func(n *html.Node) {
 		if n.Type == html.ElementNode {
+			currTag = n.Data
+
 			switch n.Data {
 			case "option", "object", "embed", "applet", "link", "noscript":
 				//Ignore
@@ -58,7 +75,9 @@ func (e *Extractor) parseDocument(d *document.Document) []TextBlock {
 			}
 		} else if n.Type == html.TextNode {
 			if flush {
+				currentBlock.Tag = currTag
 				currentBlock.Flush()
+
 				blocks = append(blocks, currentBlock)
 				currentBlock = TextBlock{}
 				flush = false
@@ -87,7 +106,9 @@ func (e *Extractor) parseDocument(d *document.Document) []TextBlock {
 		}
 
 		if flush {
+			currentBlock.Tag = currTag
 			currentBlock.Flush()
+
 			blocks = append(blocks, currentBlock)
 			currentBlock = TextBlock{}
 		}
@@ -120,8 +141,6 @@ func (e *Extractor) parseDocument(d *document.Document) []TextBlock {
 
 func (e *Extractor) clasifyBlocks(blocks []TextBlock) []TextBlock {
 	for k, block := range blocks {
-		blockType := Content
-
 		// Get previous and next blocks
 		var prev, next TextBlock
 		if k == 0 {
@@ -135,36 +154,21 @@ func (e *Extractor) clasifyBlocks(blocks []TextBlock) []TextBlock {
 
 		if block.LinkDensity <= 0.333333 {
 			if prev.LinkDensity <= 0.555555 {
-				if block.NumWords <= 16 {
-					if next.NumWords <= 15 {
-						if prev.NumWords <= 4 {
-							blockType = NotContent
-						} else {
-							blockType = Content
-						}
-					} else {
-						blockType = Content
-					}
+				if block.TextDensity <= 10 {
+					blocks[k].Type = NotContent
 				} else {
-					blockType = Content
+					blocks[k].Type = Content
 				}
 			} else {
-				if block.NumWords <= 40 {
-					if next.NumWords <= 17 {
-						blockType = NotContent
-					} else {
-						blockType = Content
-					}
+				if next.TextDensity <= 10 {
+					blocks[k].Type = NotContent
 				} else {
-					blockType = Content
+					blocks[k].Type = Content
 				}
 			}
 		} else {
-
-			blockType = NotContent
+			blocks[k].Type = NotContent
 		}
-
-		blocks[k].Type = blockType
 	}
 
 	return blocks

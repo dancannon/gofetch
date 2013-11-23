@@ -1,4 +1,4 @@
-package article
+package text
 
 import (
 	"strings"
@@ -17,6 +17,7 @@ const (
 type TextBlock struct {
 	Type ContentType
 	Text string
+	Tag  string
 
 	NumChars        int
 	NumWords        int

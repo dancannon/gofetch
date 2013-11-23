@@ -16,19 +16,19 @@
     ],
     "rules": [
         {
-    		"id": "text_universal",
+            "id": "text_universal",
             "priority": 0,
             "urls": [
                 ".*"
             ],
             "values": {
                 "@extractor": {
-                	"id": "gofetch.article.extractor"
+                    "id": "gofetch.article.extractor"
                 }
             }
         },
         {
-        	"id": "imgur",
+            "id": "imgur",
             "priority": 1,
             "urls": [
                 "http://imgur.com/[a-zA-Z0-9]+"
@@ -44,6 +44,48 @@
                         }
                     }
                 }
+            }
+        },
+        {
+            "id": "bbc_news",
+            "priority": 1,
+            "urls": [
+                "http://www.bbc.co.uk/news/.*"
+            ],
+            "values": {
+                "type": "text",
+                "author": {
+                	"@extractor": {
+	                    "id": "gofetch.selector.extractor",
+	                    "params": {
+	                        "selector": ".byline-name"
+	                    }
+	                }
+	            },
+                "published": {
+                	"@extractor": {
+	                    "id": "gofetch.selector.extractor",
+	                    "params": {
+	                        "selector": ".story-date .date"
+	                    }
+	                }
+	            },
+                "title": {
+                	"@extractor": {
+	                    "id": "gofetch.selector.extractor",
+	                    "params": {
+	                        "selector": ".story-header"
+	                    }
+	                }
+	            },
+                "content": {
+                	"@extractor": {
+	                    "id": "gofetch.selector_text.extractor",
+	                    "params": {
+	                        "selector": ".story-body"
+	                    }
+	                }
+	            }
             }
         }
     ]

@@ -5,6 +5,7 @@ import (
 	"github.com/dancannon/gofetch/config"
 	"github.com/dancannon/gofetch/document"
 	"github.com/davecgh/go-spew/spew"
+	"github.com/imdario/mergo"
 	"net/http"
 	"regexp"
 	"sort"
@@ -65,29 +66,6 @@ func parseHtml(res Result) Result {
 	doc := document.NewDocument(res.Url, res.Body)
 	cleanDocument(doc)
 
-	// // Iterate through all registered extractors and find one that can be used
-	// for _, rule := range c.Rules {
-	// 	for _, url := range rule.Urls {
-	// 		re := regexp.MustCompile(url)
-	// 		if re.MatchString(doc.Url) {
-	// 			if extractor, ok := extractors[rule.Extractor]; ok {
-	// 				err := extractor.Setup(rule.Values)
-	// 				if err != nil {
-	// 					panic(err.Error())
-	// 				}
-
-	// 				content, err := extractor.Extract(doc)
-	// 				if err != nil {
-	// 					panic(err.Error())
-	// 				}
-	// 				res.Content = content
-	// 				return res
-	// 			} else {
-	// 				panic(fmt.Sprintf("Extractor %s not found", rule.Extractor))
-	// 			}
-	// 		}
-	// 	}
-	// }
 	res.Content = make(map[string]interface{})
 
 	// Iterate through all registered rules and find one that can be used
@@ -117,11 +95,19 @@ func loadValues(values map[string]interface{}, doc *document.Document) interface
 				panic("The extractor configuration is invalid")
 			}
 
-			return runExtractor(ec, doc)
+			res := runExtractor(ec, doc)
+
+			switch res := res.(type) {
+			case map[string]interface{}:
+				if err := mergo.Merge(&m, res); err != nil {
+					panic(err.Error())
+				}
+			default:
+				return res
+			}
 		} else {
 			switch val := val.(type) {
 			case map[string]interface{}:
-				// m[key] = make(map[string]interface{})
 				m[key] = loadValues(val, doc)
 			default:
 				m[key] = val
@@ -152,7 +138,7 @@ func runExtractor(config map[string]interface{}, doc *document.Document) interfa
 
 		eres, err := extractor.Extract(doc)
 		if err != nil {
-			panic(err.Error())
+			return nil
 		}
 
 		return eres

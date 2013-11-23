@@ -1,16 +1,18 @@
 package gofetch
 
 import (
-	"github.com/dancannon/gofetch/plugin/article"
 	"github.com/dancannon/gofetch/plugin/selector"
+	"github.com/dancannon/gofetch/plugin/selector_text"
+	"github.com/dancannon/gofetch/plugin/text"
 	"github.com/davecgh/go-spew/spew"
 	"testing"
 )
 
 func TestRequest(t *testing.T) {
 	// Register all plugins
-	RegisterExtractor(new(article.Extractor))
+	RegisterExtractor(new(text.Extractor))
 	RegisterExtractor(new(selector.Extractor))
+	RegisterExtractor(new(selector_text.Extractor))
 
 	// res, err := Fetch("http://getbootstrap.com/examples/starter-template/")
 	// res, err := Fetch("http://getbootstrap.com/examples/jumbotron/")
