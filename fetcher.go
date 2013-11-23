@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"github.com/dancannon/gofetch/config"
 	"github.com/dancannon/gofetch/document"
-	"github.com/davecgh/go-spew/spew"
 	"github.com/imdario/mergo"
 	"net/http"
 	"regexp"
@@ -12,23 +11,29 @@ import (
 	"strings"
 )
 
-var scs spew.ConfigState = spew.ConfigState{Indent: "\t"}
-var scs2 spew.ConfigState = spew.ConfigState{Indent: "\t", MaxDepth: 2}
-var c = config.LoadConfig("config.json")
+type Fetcher struct {
+	Config config.Config
+}
 
-func Fetch(url string) (Result, error) {
+func NewFetcher(config config.Config) *Fetcher {
+	return &Fetcher{
+		Config: config,
+	}
+}
+
+func (f *Fetcher) Fetch(url string) (Result, error) {
 	// Load all the rules
-	for _, pc := range c.RuleProviders {
+	for _, pc := range f.Config.RuleProviders {
 		provider, err := loadProvider(pc)
 		if err != nil {
 			continue
 		}
 
-		c.Rules = append(c.Rules, provider.Provide()...)
+		f.Config.Rules = append(f.Config.Rules, provider.Provide()...)
 	}
 
 	// Sort the rules
-	sort.Sort(sort.Reverse(config.RuleSlice(c.Rules)))
+	sort.Sort(sort.Reverse(config.RuleSlice(f.Config.Rules)))
 
 	// Make request
 	res, err := http.Get(url)
@@ -41,10 +46,8 @@ func Fetch(url string) (Result, error) {
 		// If the page was HTML then parse the HTMl otherwise return the plain
 		// text
 		if isContentTypeHtml(res) {
-			return parseHtml(Result{
-				Url:  res.Request.URL.String(),
-				Body: res.Body,
-			}), nil
+			doc := document.NewDocument(res.Request.URL.String(), res.Body)
+			return f.parseDocument(doc), nil
 		} else {
 			return Result{
 				Url:      res.Request.URL.String(),
@@ -62,18 +65,22 @@ func Fetch(url string) (Result, error) {
 	}
 }
 
-func parseHtml(res Result) Result {
-	doc := document.NewDocument(res.Url, res.Body)
+func (f *Fetcher) parseDocument(doc *document.Document) Result {
+	// Prepare document for parsing
 	cleanDocument(doc)
 
+	res := Result{
+		Url:  doc.Url,
+		Body: doc.Raw,
+	}
 	res.Content = make(map[string]interface{})
 
 	// Iterate through all registered rules and find one that can be used
-	for _, rule := range c.Rules {
+	for _, rule := range f.Config.Rules {
 		for _, url := range rule.Urls {
 			re := regexp.MustCompile(url)
 			if re.MatchString(doc.Url) {
-				res.Content = loadValues(rule.Values, doc)
+				res.Content = f.loadValues(rule.Values, doc)
 				return res
 			}
 		}
@@ -82,7 +89,7 @@ func parseHtml(res Result) Result {
 	return res
 }
 
-func loadValues(values map[string]interface{}, doc *document.Document) interface{} {
+func (f *Fetcher) loadValues(values map[string]interface{}, doc *document.Document) interface{} {
 	m := map[string]interface{}{}
 
 	for key, val := range values {
@@ -108,7 +115,7 @@ func loadValues(values map[string]interface{}, doc *document.Document) interface
 		} else {
 			switch val := val.(type) {
 			case map[string]interface{}:
-				m[key] = loadValues(val, doc)
+				m[key] = f.loadValues(val, doc)
 			default:
 				m[key] = val
 			}

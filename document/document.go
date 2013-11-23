@@ -12,13 +12,15 @@ type Document struct {
 	Meta  map[string]interface{}
 	Doc   *html.Node
 	Body  *html.Node
+	Raw   io.ReadCloser
 }
 
 func NewDocument(url string, r io.ReadCloser) *Document {
 	doc := &Document{
-		Url: url,
+		Url:  url,
+		Raw:  r,
+		Meta: map[string]interface{}{},
 	}
-	doc.Meta = map[string]interface{}{}
 
 	// Parse the html
 	n, err := html.Parse(r)
