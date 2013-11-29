@@ -22,14 +22,21 @@
                 ".*"
             ],
             "values": {
-                "@extractor": {
-                    "id": "gofetch.article.extractor"
-                }
+            	"title": {
+            		"@extractor": {
+            		    "id": "gofetch.title.extractor"
+            		}
+            	},
+                "content": {
+                	"@extractor": {
+                	    "id": "gofetch.article.extractor"
+                	}
+	            }
             }
         },
         {
             "id": "imgur",
-            "priority": 1,
+            "priority": 5,
             "urls": [
                 "http://imgur.com/[a-zA-Z0-9]+"
             ],
@@ -48,7 +55,7 @@
         },
         {
             "id": "bbc_news",
-            "priority": 1,
+            "priority": 5,
             "urls": [
                 "http://www.bbc.co.uk/news/.*"
             ],
@@ -87,6 +94,35 @@
 	                }
 	            }
             }
+        },
+        {
+        	"id": "youtube",
+        	"priority": 5,
+        	"urls": [
+        	    "https?://(www.)?youtube.com/watch\\?v=.*"
+        	],
+        	"values": {
+        		"type": "opengraph",
+    	        "@extractor": {
+    	            "id": "gofetch.opengraph.extractor"
+    	        }
+        	}
+        },
+        {
+        	"id": "youtube",
+        	"priority": 5,
+        	"urls": [
+        	    "https?://(www.)?youtube.com/watch\\?v=.*"
+        	],
+        	"values": {
+        		"type": "oembed",
+    	        "@extractor": {
+    	            "id": "gofetch.oembed.extractor",
+    	            "params": {
+    	                "endpoint": "http://www.youtube.com/oembed?url=%s&format=json"
+    	            }
+    	        }
+        	}
         }
     ]
 }

@@ -1,12 +1,12 @@
 package gofetch
 
 import (
-	"io"
+	"github.com/dancannon/gofetch/document"
 )
 
 type Result struct {
 	Url      string
 	PageType PageType
-	Body     io.ReadCloser
+	Document *document.Document
 	Content  interface{}
 }

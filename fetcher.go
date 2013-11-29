@@ -41,18 +41,18 @@ func (f *Fetcher) Fetch(url string) (Result, error) {
 		return Result{}, err
 	}
 
+	doc := document.NewDocument(res.Request.URL.String(), res.Body)
+
 	// Check the returned MIME type
 	if isContentTypeParsable(res) {
 		// If the page was HTML then parse the HTMl otherwise return the plain
 		// text
 		if isContentTypeHtml(res) {
-			doc := document.NewDocument(res.Request.URL.String(), res.Body)
 			return f.parseDocument(doc), nil
 		} else {
 			return Result{
 				Url:      res.Request.URL.String(),
 				PageType: PlainText,
-				Body:     res.Body,
 			}, nil
 		}
 	} else {
@@ -70,8 +70,8 @@ func (f *Fetcher) parseDocument(doc *document.Document) Result {
 	cleanDocument(doc)
 
 	res := Result{
-		Url:  doc.Url,
-		Body: doc.Raw,
+		Document: doc,
+		Url:      doc.Url,
 	}
 	res.Content = make(map[string]interface{})
 

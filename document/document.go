@@ -8,8 +8,7 @@ import (
 type Document struct {
 	Url   string
 	Title string
-	Mime  string
-	Meta  map[string]interface{}
+	Meta  []map[string]string
 	Doc   *html.Node
 	Body  *html.Node
 	Raw   io.ReadCloser
@@ -19,7 +18,7 @@ func NewDocument(url string, r io.ReadCloser) *Document {
 	doc := &Document{
 		Url:  url,
 		Raw:  r,
-		Meta: map[string]interface{}{},
+		Meta: []map[string]string{},
 	}
 
 	// Parse the html
@@ -39,9 +38,12 @@ func NewDocument(url string, r io.ReadCloser) *Document {
 			}
 			return
 		} else if n.Type == html.ElementNode && n.Data == "meta" {
+			attrs := map[string]string{}
 			for _, a := range n.Attr {
-				doc.Meta[a.Key] = a.Val
+				attrs[a.Key] = a.Val
 			}
+
+			doc.Meta = append(doc.Meta, attrs)
 		} else if n.Type == html.ElementNode && n.Data == "body" {
 			doc.Doc = n
 		}
