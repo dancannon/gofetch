@@ -102,9 +102,12 @@
         	    "https?://(www.)?youtube.com/watch\\?v=.*"
         	],
         	"values": {
-        		"type": "opengraph",
+        		"type": "oembed",
     	        "@extractor": {
-    	            "id": "gofetch.opengraph.extractor"
+    	            "id": "gofetch.oembed.extractor",
+    	            "params": {
+    	                "endpoint": "http://www.youtube.com/oembed?url=%s&format=json"
+    	            }
     	        }
         	}
         },
@@ -115,12 +118,9 @@
         	    "https?://(www.)?youtube.com/watch\\?v=.*"
         	],
         	"values": {
-        		"type": "oembed",
+        		"type": "opengraph",
     	        "@extractor": {
-    	            "id": "gofetch.oembed.extractor",
-    	            "params": {
-    	                "endpoint": "http://www.youtube.com/oembed?url=%s&format=json"
-    	            }
+    	            "id": "gofetch.opengraph.extractor"
     	        }
         	}
         }
