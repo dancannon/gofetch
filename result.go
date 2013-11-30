@@ -6,7 +6,7 @@ import (
 
 type Result struct {
 	Url      string
-	PageType PageType
+	PageType string
 	Document *document.Document
 	Content  interface{}
 }

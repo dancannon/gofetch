@@ -5,6 +5,7 @@ import (
 	"github.com/dancannon/gofetch/config"
 	"github.com/dancannon/gofetch/document"
 	"github.com/imdario/mergo"
+	"io/ioutil"
 	"net/http"
 	"regexp"
 	"sort"
@@ -50,9 +51,17 @@ func (f *Fetcher) Fetch(url string) (Result, error) {
 		if isContentTypeHtml(res) {
 			return f.parseDocument(doc), nil
 		} else {
+			text, err := ioutil.ReadAll(res.Body)
+			if err != nil {
+				return Result{}, err
+			}
+
 			return Result{
 				Url:      res.Request.URL.String(),
-				PageType: PlainText,
+				PageType: "text",
+				Content: map[string]interface{}{
+					"text": text,
+				},
 			}, nil
 		}
 	} else {
@@ -60,7 +69,7 @@ func (f *Fetcher) Fetch(url string) (Result, error) {
 		// Content-Type header
 		return Result{
 			Url:      res.Request.URL.String(),
-			PageType: guessPageTypeFromMime(res),
+			PageType: res.Header.Get("Content-Type"),
 		}, nil
 	}
 }
