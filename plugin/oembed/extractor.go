@@ -6,7 +6,6 @@ import (
 	"errors"
 	"fmt"
 	"github.com/dancannon/gofetch/document"
-	"github.com/davecgh/go-spew/spew"
 	"net/http"
 	"net/url"
 )
@@ -35,7 +34,6 @@ func (e *Extractor) Extract(d *document.Document) (interface{}, error) {
 	url := fmt.Sprintf(e.endpoint, url.QueryEscape(d.Url))
 
 	response, err := http.Get(url)
-	spew.Dump(err, url, e.endpoint)
 	if err != nil {
 		return nil, err
 	}

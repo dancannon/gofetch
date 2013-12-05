@@ -11,6 +11,8 @@ const (
 
 	Content ContentType = iota
 	Title
+	Tag_Start
+	Tag_End
 	NotContent
 )
 

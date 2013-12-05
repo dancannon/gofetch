@@ -23,16 +23,6 @@ func NewFetcher(config config.Config) *Fetcher {
 }
 
 func (f *Fetcher) Fetch(url string) (Result, error) {
-	// Load all the rules
-	for _, pc := range f.Config.RuleProviders {
-		provider, err := loadProvider(pc)
-		if err != nil {
-			continue
-		}
-
-		f.Config.Rules = append(f.Config.Rules, provider.Provide()...)
-	}
-
 	// Sort the rules
 	sort.Sort(sort.Reverse(config.RuleSlice(f.Config.Rules)))
 
@@ -89,6 +79,7 @@ func (f *Fetcher) parseDocument(doc *document.Document) Result {
 		for _, url := range rule.Urls {
 			re := regexp.MustCompile(url)
 			if re.MatchString(doc.Url) {
+				res.PageType = rule.Type
 				res.Content = f.loadValues(rule.Values, doc)
 				return res
 			}

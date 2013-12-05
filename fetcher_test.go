@@ -22,16 +22,17 @@ func TestFetch(t *testing.T) {
 	// res, err := fetcher.Fetch("https://github.com/dancannon/gorethink/issues/51")
 	// res, err := fetcher.Fetch("http://www.youtube.com/watch?v=-UUx10KOWIE")
 	// res, err := fetcher.Fetch("http://blog.danielcannon.co.uk/2012/07/02/building-a-real-application-with-backbonejs"/)
-	res, err := fetcher.Fetch("http://www.bbc.co.uk/news/business-24815793")
+	res, err := fetcher.Fetch("http://www.bbc.co.uk/news/technology-25212514")
 	// res, err := fetcher.Fetch("http://www.bbc.co.uk/news/technology-25042563")
 	// res, err := fetcher.Fetch("http://imgur.com")
 	// res, err := fetcher.Fetch("http://imgur.com/7T7MrBc")
+	// res, err := fetcher.Fetch("http://www.flickr.com/photos/bees/2341623661/")
 	if err != nil {
 		t.Errorf("Error was returned(%s)", err)
 	}
 
 	scs := spew.ConfigState{Indent: "\t"}
-	scs.Dump(res.Content)
+	scs.Dump(res.PageType, res.Content)
 }
 
 func TestConfig(t *testing.T) {

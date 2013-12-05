@@ -18,6 +18,7 @@
         {
             "id": "text_universal",
             "priority": 0,
+            "type": "text",
             "urls": [
                 ".*"
             ],
@@ -37,12 +38,12 @@
         {
             "id": "imgur",
             "priority": 5,
+            "type": "photo",
             "urls": [
                 "http://imgur.com/[a-zA-Z0-9]+"
             ],
             "values": {
-                "type": "image",
-                "src": {
+                "url": {
                     "@extractor": {
                         "id": "gofetch.selector.extractor",
                         "params": {
@@ -56,11 +57,11 @@
         {
             "id": "bbc_news",
             "priority": 5,
+            "type": "text",
             "urls": [
                 "http://www.bbc.co.uk/news/.*"
             ],
             "values": {
-                "type": "text",
                 "author": {
                 	"@extractor": {
 	                    "id": "gofetch.selector.extractor",
@@ -98,11 +99,11 @@
         {
         	"id": "youtube",
         	"priority": 5,
+        	"type": "oembed",
         	"urls": [
         	    "https?://(www.)?youtube.com/watch\\?v=.*"
         	],
         	"values": {
-        		"type": "oembed",
     	        "@extractor": {
     	            "id": "gofetch.oembed.extractor",
     	            "params": {
@@ -112,15 +113,18 @@
         	}
         },
         {
-        	"id": "youtube",
+        	"id": "flikr",
         	"priority": 5,
+        	"type": "oembed",
         	"urls": [
-        	    "https?://(www.)?youtube.com/watch\\?v=.*"
+        	    "https?://(www.)?flickr.com/photos/.*"
         	],
         	"values": {
-        		"type": "opengraph",
     	        "@extractor": {
-    	            "id": "gofetch.opengraph.extractor"
+    	            "id": "gofetch.oembed.extractor",
+    	            "params": {
+    	                "endpoint": "http://www.flickr.com/services/oembed/?url=%s&format=json"
+    	            }
     	        }
         	}
         }

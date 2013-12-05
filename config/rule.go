@@ -2,6 +2,7 @@ package config
 
 type Rule struct {
 	Id       string                 `json:"id"`
+	Type     string                 `json:"type"`
 	Urls     []string               `json:"urls"`
 	Values   map[string]interface{} `json:"values"`
 	Priority int                    `json:"priority,omitempty"`
