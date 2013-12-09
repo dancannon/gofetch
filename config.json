@@ -16,6 +16,18 @@
     ],
     "types": [
         {
+            "id": "misc",
+            "validate": false,
+            "values": {
+                "title": {
+                    "required": true
+                },
+                "text": {
+                    "required": true
+                }
+            }
+        },
+        {
             "id": "text",
             "values": {
                 "title": {

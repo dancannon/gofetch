@@ -34,5 +34,7 @@ func (e *OpengraphExtractor) Extract(d *Document, r *Result) (interface{}, error
 		}
 	}
 
+	r.PageType = "misc"
+
 	return properties, nil
 }

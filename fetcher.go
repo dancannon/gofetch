@@ -167,6 +167,10 @@ func (f *Fetcher) validateResult(r Result) error {
 	// Check that the result uses a known type
 	for _, t := range f.Config.Types {
 		if t.Id == r.PageType {
+			if !t.Validate {
+				return nil
+			}
+
 			return validateResultValues(t.Id, r.Content, t.Values)
 		}
 	}
