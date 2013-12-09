@@ -3,10 +3,10 @@ package gofetch
 import (
 	"fmt"
 	"github.com/dancannon/gofetch/config"
-	"github.com/dancannon/gofetch/document"
 	"github.com/imdario/mergo"
 	"io/ioutil"
 	"net/http"
+	"reflect"
 	"regexp"
 	"sort"
 	"strings"
@@ -27,50 +27,59 @@ func (f *Fetcher) Fetch(url string) (Result, error) {
 	sort.Sort(sort.Reverse(config.RuleSlice(f.Config.Rules)))
 
 	// Make request
-	res, err := http.Get(url)
+	response, err := http.Get(url)
 	if err != nil {
 		return Result{}, err
 	}
 
-	doc := document.NewDocument(res.Request.URL.String(), res.Body)
+	doc := NewDocument(response.Request.URL.String(), response.Body)
+
+	var result Result
 
 	// Check the returned MIME type
-	if isContentTypeParsable(res) {
+	if isContentTypeParsable(response) {
 		// If the page was HTML then parse the HTMl otherwise return the plain
 		// text
-		if isContentTypeHtml(res) {
-			return f.parseDocument(doc), nil
+		if isContentTypeHtml(response) {
+			result = f.parseDocument(doc)
 		} else {
-			text, err := ioutil.ReadAll(res.Body)
+			text, err := ioutil.ReadAll(response.Body)
 			if err != nil {
 				return Result{}, err
 			}
 
-			return Result{
-				Url:      res.Request.URL.String(),
+			result = Result{
+				Url:      response.Request.URL.String(),
 				PageType: "text",
 				Content: map[string]interface{}{
 					"text": text,
 				},
-			}, nil
+			}
 		}
 	} else {
 		// If the content cannot be parsed then guess the page type based on the
 		// Content-Type header
-		return Result{
-			Url:      res.Request.URL.String(),
-			PageType: res.Header.Get("Content-Type"),
-		}, nil
+		result = Result{
+			Url:      response.Request.URL.String(),
+			PageType: response.Header.Get("Content-Type"),
+		}
 	}
+
+	// Validate the result
+	err = f.validateResult(result)
+	if err != nil {
+		return Result{}, err
+	}
+
+	return result, nil
 }
 
-func (f *Fetcher) parseDocument(doc *document.Document) Result {
+func (f *Fetcher) parseDocument(doc *Document) Result {
 	// Prepare document for parsing
 	cleanDocument(doc)
 
 	res := Result{
-		Document: doc,
-		Url:      doc.Url,
+		Url: doc.Url,
 	}
 	res.Content = make(map[string]interface{})
 
@@ -80,7 +89,7 @@ func (f *Fetcher) parseDocument(doc *document.Document) Result {
 			re := regexp.MustCompile(url)
 			if re.MatchString(doc.Url) {
 				res.PageType = rule.Type
-				res.Content = f.loadValues(rule.Values, doc)
+				res.Content = f.loadValues(rule.Values, doc, &res)
 				return res
 			}
 		}
@@ -89,7 +98,7 @@ func (f *Fetcher) parseDocument(doc *document.Document) Result {
 	return res
 }
 
-func (f *Fetcher) loadValues(values map[string]interface{}, doc *document.Document) interface{} {
+func (f *Fetcher) loadValues(values map[string]interface{}, doc *Document, r *Result) interface{} {
 	m := map[string]interface{}{}
 
 	for key, val := range values {
@@ -102,7 +111,7 @@ func (f *Fetcher) loadValues(values map[string]interface{}, doc *document.Docume
 				panic("The extractor configuration is invalid")
 			}
 
-			res := runExtractor(ec, doc)
+			res := runExtractor(ec, doc, r)
 
 			switch res := res.(type) {
 			case map[string]interface{}:
@@ -115,7 +124,7 @@ func (f *Fetcher) loadValues(values map[string]interface{}, doc *document.Docume
 		} else {
 			switch val := val.(type) {
 			case map[string]interface{}:
-				m[key] = f.loadValues(val, doc)
+				m[key] = f.loadValues(val, doc, r)
 			default:
 				m[key] = val
 			}
@@ -125,7 +134,7 @@ func (f *Fetcher) loadValues(values map[string]interface{}, doc *document.Docume
 	return m
 }
 
-func runExtractor(config map[string]interface{}, doc *document.Document) interface{} {
+func runExtractor(config map[string]interface{}, doc *Document, res *Result) interface{} {
 	// Validate extractor config
 	id, ok := config["id"].(string)
 	if !ok {
@@ -143,7 +152,7 @@ func runExtractor(config map[string]interface{}, doc *document.Document) interfa
 			panic(err.Error())
 		}
 
-		eres, err := extractor.Extract(doc)
+		eres, err := extractor.Extract(doc, res)
 		if err != nil {
 			return nil
 		}
@@ -152,4 +161,78 @@ func runExtractor(config map[string]interface{}, doc *document.Document) interfa
 	} else {
 		panic(fmt.Sprintf("Extractor %s not found", id))
 	}
+}
+
+func (f *Fetcher) validateResult(r Result) error {
+	// Check that the result uses a known type
+	for _, t := range f.Config.Types {
+		if t.Id == r.PageType {
+			return validateResultValues(t.Id, r.Content, t.Values)
+		}
+	}
+
+	return fmt.Errorf("The page type %s does not exist", r.PageType)
+}
+
+func validateResultValues(pagetype string, values interface{}, typValues interface{}) error {
+	// Check that both values have the same type
+	if reflect.TypeOf(values) != reflect.TypeOf(typValues) {
+		return fmt.Errorf("The result is not of the correct type")
+	}
+
+	switch typValues := typValues.(type) {
+	// If the value is a map then validate each node
+	case map[string]interface{}:
+		seenNodes := []string{}
+
+		valuesM := values.(map[string]interface{})
+
+		for k, v := range typValues {
+			// Ensure that the type value is of type map
+			if v, ok := v.(map[string]interface{}); !ok {
+				return fmt.Errorf("The result is not of the correct type")
+			} else {
+				// Check that the value has the node if it is required
+				if required, ok := v["required"].(bool); ok && required {
+					if _, ok := valuesM[k]; !ok {
+						return fmt.Errorf("The type %s requires the field %s", pagetype, k)
+					}
+				}
+
+				if _, ok := valuesM[k]; !ok {
+					continue
+				}
+
+				// Validate any children nodes if they exist
+				if childTypValues, ok := v["values"]; ok {
+					err := validateResultValues(pagetype, valuesM[k], childTypValues)
+					if err != nil {
+						return err
+					}
+				}
+
+				seenNodes = append(seenNodes, k)
+			}
+		}
+
+		// Check that the result value doesnt have any extra nodes
+		for k, _ := range valuesM {
+			seen := false
+
+			for _, sk := range seenNodes {
+				if !seen && k == sk {
+					seen = true
+				}
+			}
+
+			if !seen {
+				return fmt.Errorf("The type %s does not contain the field %s", pagetype, k)
+			}
+		}
+	// If the value was not a map then the value does not validate
+	default:
+		return fmt.Errorf("The result is not of the correct type")
+	}
+
+	return nil
 }

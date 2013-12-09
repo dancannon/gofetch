@@ -7,7 +7,8 @@ import (
 )
 
 type Config struct {
-	Rules []Rule `json:"rules`
+	Rules []Rule `json:"rules"`
+	Types []Type `json:"types"`
 }
 
 func LoadConfig(path string) Config {

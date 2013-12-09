@@ -1,23 +1,21 @@
-package selector_text
+package gofetch
 
 import (
 	"errors"
 	"fmt"
 	"github.com/PuerkitoBio/goquery"
-	"github.com/dancannon/gofetch/document"
-	"github.com/dancannon/gofetch/plugin/text"
 )
 
-type Extractor struct {
+type SelectorTextExtractor struct {
 	selector      string
-	textextractor *text.Extractor
+	textextractor *TextExtractor
 }
 
-func (e *Extractor) Id() string {
+func (e *SelectorTextExtractor) Id() string {
 	return "gofetch.selector_text.extractor"
 }
 
-func (e *Extractor) Setup(config map[string]interface{}) error {
+func (e *SelectorTextExtractor) Setup(config map[string]interface{}) error {
 	// Validate config
 	if selector, ok := config["selector"]; !ok {
 		return errors.New(fmt.Sprintf("The %s extractor must be passed a CSS selector", e.Id()))
@@ -25,8 +23,8 @@ func (e *Extractor) Setup(config map[string]interface{}) error {
 		e.selector = selector.(string)
 	}
 
-	// Setup text extractor
-	e.textextractor = &text.Extractor{}
+	// Setup text SelectorTextExtractor
+	e.textextractor = &TextExtractor{}
 	err := e.textextractor.Setup(config)
 	if err != nil {
 		return err
@@ -35,7 +33,7 @@ func (e *Extractor) Setup(config map[string]interface{}) error {
 	return nil
 }
 
-func (e *Extractor) Extract(d *document.Document) (interface{}, error) {
+func (e *SelectorTextExtractor) Extract(d *Document, r *Result) (interface{}, error) {
 	doc := goquery.NewDocumentFromNode(d.Body)
 
 	n := doc.Find(e.selector)
@@ -47,5 +45,5 @@ func (e *Extractor) Extract(d *document.Document) (interface{}, error) {
 	d.Body = n.Get(0)
 
 	// Run the new document through the text selector
-	return e.textextractor.Extract(d)
+	return e.textextractor.Extract(d, r)
 }

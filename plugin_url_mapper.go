@@ -1,22 +1,21 @@
-package selector
+package gofetch
 
 import (
 	"errors"
 	"fmt"
-	"github.com/dancannon/gofetch/document"
 	"regexp"
 )
 
-type Extractor struct {
+type UrlMapperExtractor struct {
 	pattern     string
 	replacement string
 }
 
-func (e *Extractor) Id() string {
+func (e *UrlMapperExtractor) Id() string {
 	return "gofetch.url_mapper.extractor"
 }
 
-func (e *Extractor) Setup(values []Value) error {
+func (e *UrlMapperExtractor) Setup(config map[string]interface{}) error {
 	// Validate config
 	if pattern, ok := config["pattern"]; !ok {
 		return errors.New(fmt.Sprintf("The %s extractor must be passed a source url", e.Id()))
@@ -33,7 +32,11 @@ func (e *Extractor) Setup(values []Value) error {
 	return nil
 }
 
-func (e *Extractor) Extract(d *document.Document) (map[string]interface{}, error) {
-	re := regexp.Compile(e.pattern)
-	return re.ReplaceAllString(d.Url, e.replacement)
+func (e *UrlMapperExtractor) Extract(d *Document, r *Result) (interface{}, error) {
+	re, err := regexp.Compile(e.pattern)
+	if err != nil {
+		return nil, err
+	}
+
+	return re.ReplaceAllString(d.Url, e.replacement), nil
 }

@@ -2,7 +2,6 @@ package gofetch
 
 import (
 	"code.google.com/p/go.net/html"
-	"github.com/dancannon/gofetch/document"
 	"net/url"
 	"regexp"
 	"strings"
@@ -13,11 +12,11 @@ var (
 	ignorableRegex       = regexp.MustCompile(ignorableIdentifiers)
 )
 
-func cleanDocument(d *document.Document) {
+func cleanDocument(d *Document) {
 	cleanNode(d.Doc, d)
 }
 
-func cleanNode(n *html.Node, d *document.Document) {
+func cleanNode(n *html.Node, d *Document) {
 	if n.Type == html.ElementNode {
 		// Ensure that the body tag is added to the result document
 		if n.Data == "body" {

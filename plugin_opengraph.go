@@ -1,22 +1,21 @@
-package opengraph
+package gofetch
 
 import (
-	"github.com/dancannon/gofetch/document"
 	"strings"
 )
 
-type Extractor struct {
+type OpengraphExtractor struct {
 }
 
-func (e *Extractor) Id() string {
+func (e *OpengraphExtractor) Id() string {
 	return "gofetch.opengraph.extractor"
 }
 
-func (e *Extractor) Setup(config map[string]interface{}) error {
+func (e *OpengraphExtractor) Setup(config map[string]interface{}) error {
 	return nil
 }
 
-func (e *Extractor) Extract(d *document.Document) (interface{}, error) {
+func (e *OpengraphExtractor) Extract(d *Document, r *Result) (interface{}, error) {
 	properties := map[string]interface{}{}
 
 	for _, meta := range d.Meta {

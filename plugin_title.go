@@ -1,8 +1,7 @@
-package title
+package gofetch
 
 import (
 	"code.google.com/p/go.net/html"
-	"github.com/dancannon/gofetch/document"
 	"sort"
 	"strings"
 )
@@ -18,18 +17,18 @@ func (s titleSlice) Len() int           { return len(s) }
 func (s titleSlice) Less(i, j int) bool { return s[i].level < s[j].level }
 func (s titleSlice) Swap(i, j int)      { s[i], s[j] = s[j], s[i] }
 
-type Extractor struct {
+type TitleExtractor struct {
 }
 
-func (e *Extractor) Id() string {
+func (e *TitleExtractor) Id() string {
 	return "gofetch.title.extractor"
 }
 
-func (e *Extractor) Setup(config map[string]interface{}) error {
+func (e *TitleExtractor) Setup(config map[string]interface{}) error {
 	return nil
 }
 
-func (e *Extractor) Extract(d *document.Document) (interface{}, error) {
+func (e *TitleExtractor) Extract(d *Document, r *Result) (interface{}, error) {
 	var currTitle title
 
 	titles := titleSlice{}

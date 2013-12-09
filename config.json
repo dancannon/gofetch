@@ -14,6 +14,131 @@
             }
         }
     ],
+    "types": [
+        {
+            "id": "text",
+            "values": {
+                "title": {
+                    "required": true
+                },
+                "author": {
+                    "required": false,
+                    "values": {
+                        "name": {
+                            "required": true
+                        },
+                        "url": {
+                            "required": false
+                        }
+                    }
+                },
+                "published": {
+                    "required": false
+                },
+                "text": {
+                    "required": true
+                }
+            }
+        },
+        {
+            "id": "photo",
+            "values": {
+                "title": {
+                    "required": true
+                },
+                "caption": {
+                    "required": false
+                },
+                "author": {
+                    "required": false,
+                    "values": {
+                        "name": {
+                            "required": true
+                        },
+                        "url": {
+                            "required": false
+                        }
+                    }
+                },
+                "thumbnail": {
+                    "required": false,
+                    "values": {
+                        "url": {
+                            "required": true
+                        },
+                        "width": {
+                            "required": false
+                        },
+                        "height": {
+                            "required": false
+                        }
+                    }
+                },
+                "url": {
+                    "required": true
+                },
+                "height": {
+                    "required": false
+                },
+                "width": {
+                    "required": false
+                }
+            }
+        },
+        {
+            "id": "video",
+            "values": {
+                "title": {
+                    "required": true
+                },
+                "description": {
+                    "required": false
+                },
+                "author": {
+                    "required": false,
+                    "values": {
+                        "name": {
+                            "required": true
+                        },
+                        "url": {
+                            "required": true
+                        }
+                    }
+                },
+                "thumbnail": {
+                    "required": false,
+                    "values": {
+                        "url": {
+                            "required": true
+                        },
+                        "width": {
+                            "required": true
+                        },
+                        "height": {
+                            "required": true
+                        }
+                    }
+                },
+                "html": {
+                    "required": true
+                }
+            }
+        },
+        {
+            "id": "rich",
+            "values": {
+                "html": {
+                    "required": true
+                },
+                "height": {
+                    "required": false
+                },
+                "width": {
+                    "required": false
+                }
+            }
+        }
+    ],
     "rules": [
         {
             "id": "text_universal",
@@ -23,16 +148,16 @@
                 ".*"
             ],
             "values": {
-            	"title": {
-            		"@extractor": {
-            		    "id": "gofetch.title.extractor"
-            		}
-            	},
-                "content": {
-                	"@extractor": {
-                	    "id": "gofetch.article.extractor"
-                	}
-	            }
+                "title": {
+                    "@extractor": {
+                        "id": "gofetch.title.extractor"
+                    }
+                },
+                "text": {
+                    "@extractor": {
+                        "id": "gofetch.article.extractor"
+                    }
+                }
             }
         },
         {
@@ -43,6 +168,14 @@
                 "http://imgur.com/[a-zA-Z0-9]+"
             ],
             "values": {
+                "title": {
+                    "@extractor": {
+                        "id": "gofetch.selector.extractor",
+                        "params": {
+                            "selector": "#image-title"
+                        }
+                    }
+                },
                 "url": {
                     "@extractor": {
                         "id": "gofetch.selector.extractor",
@@ -62,71 +195,73 @@
                 "http://www.bbc.co.uk/news/.*"
             ],
             "values": {
-                "author": {
-                	"@extractor": {
-	                    "id": "gofetch.selector.extractor",
-	                    "params": {
-	                        "selector": ".byline-name"
-	                    }
-	                }
-	            },
-                "published": {
-                	"@extractor": {
-	                    "id": "gofetch.selector.extractor",
-	                    "params": {
-	                        "selector": ".story-date .date"
-	                    }
-	                }
-	            },
                 "title": {
-                	"@extractor": {
-	                    "id": "gofetch.selector.extractor",
-	                    "params": {
-	                        "selector": ".story-header"
-	                    }
-	                }
-	            },
-                "content": {
-                	"@extractor": {
-	                    "id": "gofetch.selector_text.extractor",
-	                    "params": {
-	                        "selector": ".story-body"
-	                    }
-	                }
-	            }
+                    "@extractor": {
+                        "id": "gofetch.selector.extractor",
+                        "params": {
+                            "selector": ".story-header"
+                        }
+                    }
+                },
+                "author": {
+                	"name": {
+                		"@extractor": {
+                		    "id": "gofetch.selector.extractor",
+                		    "params": {
+                		        "selector": ".byline-name"
+                		    }
+                		}
+                	}
+                },
+                "published": {
+                    "@extractor": {
+                        "id": "gofetch.selector.extractor",
+                        "params": {
+                            "selector": ".story-date .date"
+                        }
+                    }
+                },
+                "text": {
+                    "@extractor": {
+                        "id": "gofetch.selector_text.extractor",
+                        "params": {
+                            "selector": ".story-body"
+                        }
+                    }
+                }
             }
         },
         {
-        	"id": "youtube",
-        	"priority": 5,
-        	"type": "oembed",
-        	"urls": [
-        	    "https?://(www.)?youtube.com/watch\\?v=.*"
-        	],
-        	"values": {
-    	        "@extractor": {
-    	            "id": "gofetch.oembed.extractor",
-    	            "params": {
-    	                "endpoint": "http://www.youtube.com/oembed?url=%s&format=json"
-    	            }
-    	        }
-        	}
+            "id": "youtube",
+            "priority": 5,
+            "type": "oembed",
+            "urls": [
+                "https?://(www.)?youtube.com/watch\\?v=.*"
+            ],
+            "values": {
+                "@extractor": {
+                    "id": "gofetch.oembed.extractor",
+                    "params": {
+                        "endpoint": "http://www.youtube.com/oembed?url=%s&format=json"
+                    }
+                }
+            }
         },
         {
-        	"id": "flikr",
-        	"priority": 5,
-        	"type": "oembed",
-        	"urls": [
-        	    "https?://(www.)?flickr.com/photos/.*"
-        	],
-        	"values": {
-    	        "@extractor": {
-    	            "id": "gofetch.oembed.extractor",
-    	            "params": {
-    	                "endpoint": "http://www.flickr.com/services/oembed/?url=%s&format=json"
-    	            }
-    	        }
-        	}
+            "id": "flikr",
+            "priority": 5,
+            "type": "oembed",
+            "urls": [
+                "https?://(www.)?flickr.com/photos/.*"
+            ],
+            "values": {
+                "@extractor": {
+                    "id": "gofetch.oembed.extractor",
+                    "params": {
+                        "endpoint": "http://www.flickr.com/services/oembed/?url=%s&format=json"
+                    }
+                }
+            }
         }
     ]
 }

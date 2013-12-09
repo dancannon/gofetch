@@ -1,22 +1,21 @@
-package selector
+package gofetch
 
 import (
 	"errors"
 	"fmt"
 	"github.com/PuerkitoBio/goquery"
-	"github.com/dancannon/gofetch/document"
 )
 
-type Extractor struct {
+type SelectorExtractor struct {
 	selector  string
 	attribute string
 }
 
-func (e *Extractor) Id() string {
+func (e *SelectorExtractor) Id() string {
 	return "gofetch.selector.extractor"
 }
 
-func (e *Extractor) Setup(config map[string]interface{}) error {
+func (e *SelectorExtractor) Setup(config map[string]interface{}) error {
 	// Validate config
 	if selector, ok := config["selector"]; !ok {
 		return errors.New(fmt.Sprintf("The %s extractor must be passed a CSS selector", e.Id()))
@@ -30,7 +29,7 @@ func (e *Extractor) Setup(config map[string]interface{}) error {
 	return nil
 }
 
-func (e *Extractor) Extract(d *document.Document) (interface{}, error) {
+func (e *SelectorExtractor) Extract(d *Document, r *Result) (interface{}, error) {
 	doc := goquery.NewDocumentFromNode(d.Body)
 
 	n := doc.Find(e.selector)

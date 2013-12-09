@@ -1,23 +1,100 @@
-package text
+package gofetch
 
 import (
 	"code.google.com/p/go.net/html"
-	"github.com/dancannon/gofetch/document"
 	"regexp"
+	"strings"
 )
 
-type Extractor struct {
+type ContentType int
+
+const (
+	lineLength = 80
+
+	Content ContentType = iota
+	Title
+	Tag_Start
+	Tag_End
+	NotContent
+)
+
+type TextBlock struct {
+	Type ContentType
+	Text string
+	Tag  string
+
+	NumChars        int
+	NumWords        int
+	NumLinkedWords  int
+	NumWrappedWords int
+	NumLines        int
+
+	TextDensity float64
+	LinkDensity float64
 }
 
-func (e *Extractor) Id() string {
+func (b *TextBlock) AddText(text string, inLink bool) {
+	words := strings.Fields(text)
+
+	// Increment counts
+	b.NumWords += len(words)
+	b.NumChars += len(text)
+	if inLink {
+		b.NumLinkedWords += len(words)
+	}
+
+	b.Text = b.Text + text
+}
+
+func (b *TextBlock) Flush() {
+	// Count the number of lines
+	words := strings.Fields(b.Text)
+	currLineChars := 0
+	currLineWords := 0
+
+	b.NumLines = 0
+	b.NumWrappedWords = 0
+
+	for _, word := range words {
+		currLineChars += len(word)
+		currLineWords += 1
+
+		if currLineChars > lineLength {
+			b.NumLines++
+			b.NumWrappedWords = 0
+
+			currLineChars = 0
+			currLineWords = 0
+		}
+	}
+
+	if b.NumLines == 0 {
+		b.NumWrappedWords = b.NumWords
+		b.NumLines = 1
+	} else {
+		b.NumWrappedWords = b.NumWords - currLineWords
+	}
+
+	b.TextDensity = float64(b.NumWrappedWords) / float64(b.NumLines)
+	if b.NumWords == 0 {
+		b.LinkDensity = 0
+	} else {
+		b.LinkDensity = float64(b.NumLinkedWords) / float64(b.NumWords)
+	}
+}
+
+type TextExtractor struct {
+}
+
+func (e *TextExtractor) Id() string {
 	return "gofetch.article.extractor"
 }
 
-func (e *Extractor) Setup(_ map[string]interface{}) error {
+func (e *TextExtractor) Setup(_ map[string]interface{}) error {
 	return nil
 }
 
-func (e *Extractor) Extract(d *document.Document) (interface{}, error) {
+func (e *TextExtractor) Extract(d *Document, r *Result) (interface{}, error) {
 	blocks := e.parseDocument(d)
 	blocks = e.clasifyBlocks(blocks)
 
@@ -42,7 +119,7 @@ func (e *Extractor) Extract(d *document.Document) (interface{}, error) {
 	return content, nil
 }
 
-func (e *Extractor) parseDocument(d *document.Document) []TextBlock {
+func (e *TextExtractor) parseDocument(d *Document) []TextBlock {
 	blocks := []TextBlock{}
 	currentBlock := TextBlock{}
 	flush := false
@@ -166,7 +243,7 @@ func (e *Extractor) parseDocument(d *document.Document) []TextBlock {
 	return blocks
 }
 
-func (e *Extractor) clasifyBlocks(blocks []TextBlock) []TextBlock {
+func (e *TextExtractor) clasifyBlocks(blocks []TextBlock) []TextBlock {
 	for k, block := range blocks {
 		if block.Type == 0 {
 			// Get previous and next blocks

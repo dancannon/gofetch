@@ -1,4 +1,4 @@
-package document
+package gofetch
 
 import (
 	"code.google.com/p/go.net/html"
