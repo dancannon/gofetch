@@ -1,7 +1,9 @@
-package gofetch
+package title
 
 import (
 	"code.google.com/p/go.net/html"
+	. "github.com/dancannon/gofetch/message"
+	. "github.com/dancannon/gofetch/plugins"
 	"sort"
 	"strings"
 )
@@ -20,15 +22,11 @@ func (s titleSlice) Swap(i, j int)      { s[i], s[j] = s[j], s[i] }
 type TitleExtractor struct {
 }
 
-func (e *TitleExtractor) Id() string {
-	return "gofetch.title.extractor"
-}
-
-func (e *TitleExtractor) Setup(config map[string]interface{}) error {
+func (e *TitleExtractor) Setup(_ interface{}) error {
 	return nil
 }
 
-func (e *TitleExtractor) Extract(d *Document, r *Result) (interface{}, error) {
+func (e *TitleExtractor) Extract(msg *ExtractMessage) error {
 	var currTitle title
 
 	titles := titleSlice{}
@@ -71,14 +69,20 @@ func (e *TitleExtractor) Extract(d *Document, r *Result) (interface{}, error) {
 		}
 	}
 
-	f(d.Body)
+	f(msg.Document.Body.Node())
 
 	sort.Sort(titles)
 	for _, t := range titles {
-		if strings.Contains(d.Title, t.text) {
-			return t.text, nil
+		if strings.Contains(msg.Document.Title, t.text) {
+			msg.Value = t.text
+			return nil
 		}
 	}
 
-	return d.Title, nil
+	msg.Value = msg.Document.Title
+	return nil
+}
+
+func init() {
+	RegisterPlugin("title", new(TitleExtractor))
 }

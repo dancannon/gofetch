@@ -1,24 +1,23 @@
-package gofetch
+package opengraph
 
 import (
+	. "github.com/dancannon/gofetch/message"
+	. "github.com/dancannon/gofetch/plugins"
+
 	"strings"
 )
 
 type OpengraphExtractor struct {
 }
 
-func (e *OpengraphExtractor) Id() string {
-	return "gofetch.opengraph.extractor"
-}
-
-func (e *OpengraphExtractor) Setup(config map[string]interface{}) error {
+func (e *OpengraphExtractor) Setup(_ interface{}) error {
 	return nil
 }
 
-func (e *OpengraphExtractor) Extract(d *Document, r *Result) (interface{}, error) {
+func (e *OpengraphExtractor) Extract(msg *ExtractMessage) error {
 	properties := map[string]interface{}{}
 
-	for _, meta := range d.Meta {
+	for _, meta := range msg.Document.Meta {
 		var property, content string
 
 		for key, val := range meta {
@@ -34,7 +33,11 @@ func (e *OpengraphExtractor) Extract(d *Document, r *Result) (interface{}, error
 		}
 	}
 
-	r.PageType = "misc"
+	msg.Value = properties
 
-	return properties, nil
+	return nil
+}
+
+func init() {
+	RegisterPlugin("opengraph", new(OpengraphExtractor))
 }

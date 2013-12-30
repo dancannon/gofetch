@@ -162,12 +162,12 @@
             "values": {
                 "title": {
                     "@extractor": {
-                        "id": "gofetch.title.extractor"
+                        "id": "title"
                     }
                 },
                 "text": {
                     "@extractor": {
-                        "id": "gofetch.article.extractor"
+                        "id": "text"
                     }
                 }
             }
@@ -182,7 +182,7 @@
             "values": {
                 "title": {
                     "@extractor": {
-                        "id": "gofetch.selector.extractor",
+                        "id": "selector",
                         "params": {
                             "selector": "#image-title"
                         }
@@ -190,7 +190,7 @@
                 },
                 "url": {
                     "@extractor": {
-                        "id": "gofetch.selector.extractor",
+                        "id": "selector",
                         "params": {
                             "selector": "#image img",
                             "attribute": "src"
@@ -209,7 +209,7 @@
             "values": {
                 "title": {
                     "@extractor": {
-                        "id": "gofetch.selector.extractor",
+                        "id": "selector",
                         "params": {
                             "selector": ".story-header"
                         }
@@ -218,7 +218,7 @@
                 "author": {
                 	"name": {
                 		"@extractor": {
-                		    "id": "gofetch.selector.extractor",
+                		    "id": "selector",
                 		    "params": {
                 		        "selector": ".byline-name"
                 		    }
@@ -227,7 +227,7 @@
                 },
                 "published": {
                     "@extractor": {
-                        "id": "gofetch.selector.extractor",
+                        "id": "selector",
                         "params": {
                             "selector": ".story-date .date"
                         }
@@ -235,7 +235,7 @@
                 },
                 "text": {
                     "@extractor": {
-                        "id": "gofetch.selector_text.extractor",
+                        "id": "selector_text",
                         "params": {
                             "selector": ".story-body"
                         }
@@ -246,13 +246,13 @@
         {
             "id": "youtube",
             "priority": 5,
-            "type": "oembed",
+            "type": "misc",
             "urls": [
                 "https?://(www.)?youtube.com/watch\\?v=.*"
             ],
             "values": {
                 "@extractor": {
-                    "id": "gofetch.oembed.extractor",
+                    "id": "oembed",
                     "params": {
                         "endpoint": "http://www.youtube.com/oembed?url=%s&format=json"
                     }
@@ -262,13 +262,13 @@
         {
             "id": "flikr",
             "priority": 5,
-            "type": "oembed",
+            "type": "misc",
             "urls": [
                 "https?://(www.)?flickr.com/photos/.*"
             ],
             "values": {
                 "@extractor": {
-                    "id": "gofetch.oembed.extractor",
+                    "id": "oembed",
                     "params": {
                         "endpoint": "http://www.flickr.com/services/oembed/?url=%s&format=json"
                     }

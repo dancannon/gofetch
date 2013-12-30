@@ -1,9 +1,22 @@
 package gofetch
 
 import (
-	"fmt"
 	"github.com/dancannon/gofetch/config"
+	"github.com/dancannon/gofetch/document"
+	. "github.com/dancannon/gofetch/message"
+	. "github.com/dancannon/gofetch/plugins"
+
+	_ "github.com/dancannon/gofetch/plugins/oembed"
+	_ "github.com/dancannon/gofetch/plugins/opengraph"
+	_ "github.com/dancannon/gofetch/plugins/selector"
+	_ "github.com/dancannon/gofetch/plugins/selector_text"
+	_ "github.com/dancannon/gofetch/plugins/text"
+	_ "github.com/dancannon/gofetch/plugins/title"
+	_ "github.com/dancannon/gofetch/plugins/url_mapper"
+
 	"github.com/imdario/mergo"
+
+	"fmt"
 	"io/ioutil"
 	"net/http"
 	"reflect"
@@ -32,7 +45,7 @@ func (f *Fetcher) Fetch(url string) (Result, error) {
 		return Result{}, err
 	}
 
-	doc := NewDocument(response.Request.URL.String(), response.Body)
+	doc := document.NewDocument(response.Request.URL.String(), response.Body)
 
 	var result Result
 
@@ -74,12 +87,13 @@ func (f *Fetcher) Fetch(url string) (Result, error) {
 	return result, nil
 }
 
-func (f *Fetcher) parseDocument(doc *Document) Result {
+func (f *Fetcher) parseDocument(doc *document.Document) Result {
 	// Prepare document for parsing
 	cleanDocument(doc)
 
 	res := Result{
-		Url: doc.Url,
+		Url:      doc.Url,
+		PageType: "misc",
 	}
 	res.Content = make(map[string]interface{})
 
@@ -98,7 +112,7 @@ func (f *Fetcher) parseDocument(doc *Document) Result {
 	return res
 }
 
-func (f *Fetcher) loadValues(values map[string]interface{}, doc *Document, r *Result) interface{} {
+func (f *Fetcher) loadValues(values map[string]interface{}, doc *document.Document, r *Result) interface{} {
 	m := map[string]interface{}{}
 
 	for key, val := range values {
@@ -134,7 +148,7 @@ func (f *Fetcher) loadValues(values map[string]interface{}, doc *Document, r *Re
 	return m
 }
 
-func runExtractor(config map[string]interface{}, doc *Document, res *Result) interface{} {
+func runExtractor(config map[string]interface{}, doc *document.Document, res *Result) interface{} {
 	// Validate extractor config
 	id, ok := config["id"].(string)
 	if !ok {
@@ -146,18 +160,27 @@ func runExtractor(config map[string]interface{}, doc *Document, res *Result) int
 	}
 
 	// Load and execute the extractor
-	if extractor, ok := extractors[id]; ok {
+	if extractor, ok := Extractors[id]; ok {
 		err := extractor.Setup(params)
 		if err != nil {
 			panic(err.Error())
 		}
 
-		eres, err := extractor.Extract(doc, res)
+		msg := &ExtractMessage{
+			Value:    nil,
+			Document: doc,
+		}
+
+		err = extractor.Extract(msg)
 		if err != nil {
 			return nil
 		}
 
-		return eres
+		if msg.PageType != "" {
+			res.PageType = msg.PageType
+		}
+
+		return msg.Value
 	} else {
 		panic(fmt.Sprintf("Extractor %s not found", id))
 	}

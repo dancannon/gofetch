@@ -1,6 +1,9 @@
-package gofetch
+package oembed
 
 import (
+	. "github.com/dancannon/gofetch/message"
+	. "github.com/dancannon/gofetch/plugins"
+
 	"encoding/json"
 	"encoding/xml"
 	"errors"
@@ -14,31 +17,29 @@ type OEmbedExtractor struct {
 	format   string
 }
 
-func (e *OEmbedExtractor) Id() string {
-	return "gofetch.oembed.extractor"
-}
+func (e *OEmbedExtractor) Setup(config interface{}) error {
+	params := config.(map[string]interface{})
 
-func (e *OEmbedExtractor) Setup(config map[string]interface{}) error {
 	// Validate config
-	if endpoint, ok := config["endpoint"]; !ok {
-		return errors.New(fmt.Sprintf("The %s extractor must be passed an endpoint", e.Id()))
+	if endpoint, ok := params["endpoint"]; !ok {
+		return errors.New(fmt.Sprintf("The oembed extractor must be passed an endpoint"))
 	} else {
 		e.endpoint = endpoint.(string)
 	}
 
-	if format, ok := config["format"]; ok {
+	if format, ok := params["format"]; ok {
 		e.format = format.(string)
 	}
 
 	return nil
 }
 
-func (e *OEmbedExtractor) Extract(d *Document, r *Result) (interface{}, error) {
-	url := fmt.Sprintf(e.endpoint, url.QueryEscape(d.Url))
+func (e *OEmbedExtractor) Extract(msg *ExtractMessage) error {
+	url := fmt.Sprintf(e.endpoint, url.QueryEscape(msg.Document.Url))
 
 	response, err := http.Get(url)
 	if err != nil {
-		return nil, err
+		return err
 	}
 
 	defer response.Body.Close()
@@ -50,18 +51,18 @@ func (e *OEmbedExtractor) Extract(d *Document, r *Result) (interface{}, error) {
 		decoder := json.NewDecoder(response.Body)
 		err = decoder.Decode(&res)
 		if err != nil {
-			return nil, err
+			return err
 		}
 	} else {
 		decoder := xml.NewDecoder(response.Body)
 		err = decoder.Decode(&res)
 		if err != nil {
-			return nil, err
+			return err
 		}
 	}
 
 	// Override the result page type
-	r.PageType = res["type"].(string)
+	msg.PageType = res["type"].(string)
 
 	switch res["type"] {
 	case "photo":
@@ -98,5 +99,11 @@ func (e *OEmbedExtractor) Extract(d *Document, r *Result) (interface{}, error) {
 		}
 	}
 
-	return interface{}(res), nil
+	msg.Value = res
+
+	return nil
+}
+
+func init() {
+	RegisterPlugin("oembed", new(OEmbedExtractor))
 }

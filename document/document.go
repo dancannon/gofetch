@@ -1,23 +1,35 @@
-package gofetch
+package document
 
 import (
+	"bytes"
 	"code.google.com/p/go.net/html"
 	"io"
 )
 
-type Document struct {
-	Url   string
-	Title string
-	Meta  []map[string]string
-	Doc   *html.Node
-	Body  *html.Node
-	Raw   io.ReadCloser
+type HtmlNode html.Node
+
+func (n *HtmlNode) MarshalJSON() ([]byte, error) {
+	w := bytes.Buffer{}
+	err := html.Render(&w, n.Node())
+
+	return w.Bytes(), err
 }
 
-func NewDocument(url string, r io.ReadCloser) *Document {
+func (n *HtmlNode) Node() *html.Node {
+	return (*html.Node)(n)
+}
+
+type Document struct {
+	Url   string              `json:"url"`
+	Title string              `json:"title"`
+	Meta  []map[string]string `json:"meta"`
+	Doc   *HtmlNode           `json:"doc"`
+	Body  *HtmlNode           `json:"body"`
+}
+
+func NewDocument(url string, r io.Reader) *Document {
 	doc := &Document{
 		Url:  url,
-		Raw:  r,
 		Meta: []map[string]string{},
 	}
 
@@ -45,7 +57,7 @@ func NewDocument(url string, r io.ReadCloser) *Document {
 
 			doc.Meta = append(doc.Meta, attrs)
 		} else if n.Type == html.ElementNode && n.Data == "body" {
-			doc.Doc = n
+			doc.Doc = (*HtmlNode)(n)
 		}
 
 		for c := n.FirstChild; c != nil; c = c.NextSibling {

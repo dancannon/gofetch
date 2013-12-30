@@ -1,6 +1,10 @@
-package gofetch
+package text
 
 import (
+	"github.com/dancannon/gofetch/document"
+	. "github.com/dancannon/gofetch/message"
+	. "github.com/dancannon/gofetch/plugins"
+
 	"code.google.com/p/go.net/html"
 	"regexp"
 	"strings"
@@ -86,16 +90,12 @@ func (b *TextBlock) Flush() {
 type TextExtractor struct {
 }
 
-func (e *TextExtractor) Id() string {
-	return "gofetch.article.extractor"
-}
-
-func (e *TextExtractor) Setup(_ map[string]interface{}) error {
+func (e *TextExtractor) Setup(_ interface{}) error {
 	return nil
 }
 
-func (e *TextExtractor) Extract(d *Document, r *Result) (interface{}, error) {
-	blocks := e.parseDocument(d)
+func (e *TextExtractor) Extract(msg *ExtractMessage) error {
+	blocks := e.parseDocument(msg.Document)
 	blocks = e.clasifyBlocks(blocks)
 
 	content := ""
@@ -113,13 +113,15 @@ func (e *TextExtractor) Extract(d *Document, r *Result) (interface{}, error) {
 	}
 
 	if !hasContent {
-		return "", nil
+		msg.Value = ""
 	}
 
-	return content, nil
+	msg.Value = content
+
+	return nil
 }
 
-func (e *TextExtractor) parseDocument(d *Document) []TextBlock {
+func (e *TextExtractor) parseDocument(d *document.Document) []TextBlock {
 	blocks := []TextBlock{}
 	currentBlock := TextBlock{}
 	flush := false
@@ -216,7 +218,7 @@ func (e *TextExtractor) parseDocument(d *Document) []TextBlock {
 		}
 	}
 
-	f(d.Body)
+	f(d.Body.Node())
 
 	// Clean blocks
 	tmp := []TextBlock{}
@@ -278,4 +280,8 @@ func (e *TextExtractor) clasifyBlocks(blocks []TextBlock) []TextBlock {
 	}
 
 	return blocks
+}
+
+func init() {
+	RegisterPlugin("text", new(TextExtractor))
 }
