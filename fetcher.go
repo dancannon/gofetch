@@ -5,6 +5,7 @@ import (
 	"github.com/dancannon/gofetch/document"
 	. "github.com/dancannon/gofetch/message"
 	. "github.com/dancannon/gofetch/plugins"
+	. "github.com/dancannon/gofetch/sandbox/plugins"
 
 	_ "github.com/dancannon/gofetch/plugins/oembed"
 	_ "github.com/dancannon/gofetch/plugins/opengraph"
@@ -36,6 +37,17 @@ func NewFetcher(config config.Config) *Fetcher {
 }
 
 func (f *Fetcher) Fetch(url string) (Result, error) {
+	// Load js/lua plugins
+	for _, sbc := range f.Config.Plugins {
+		plugin := new(SandboxExtractor)
+		err := plugin.Init(&sbc)
+		if err != nil {
+			return Result{}, err
+		}
+
+		RegisterPlugin(sbc.Id, plugin)
+	}
+
 	// Sort the rules
 	sort.Sort(sort.Reverse(config.RuleSlice(f.Config.Rules)))
 

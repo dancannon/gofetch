@@ -2,13 +2,15 @@ package config
 
 import (
 	"encoding/json"
+	"github.com/dancannon/gofetch/sandbox"
 	"os"
 	"path/filepath"
 )
 
 type Config struct {
-	Rules []Rule `json:"rules"`
-	Types []Type `json:"types"`
+	Plugins []sandbox.SandboxConfig `json:"plugins"`
+	Rules   []Rule                  `json:"rules"`
+	Types   []Type                  `json:"types"`
 }
 
 func LoadConfig(path string) Config {

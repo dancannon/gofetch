@@ -25,16 +25,17 @@ type Sandbox interface {
 	LastError() string
 
 	// Plugin functions
-	ProcessMessage(msg *Message) int
+	ProcessMessage(msg *ExtractMessage) int
 }
 
 type SandboxConfig struct {
-	ScriptType       string `toml:script_type"`
-	ScriptFilename   string `toml:"filename"`
-	ModuleDirectory  string `toml:"module_directory"`
-	PreserveData     bool   `toml:"preserve_data"`
-	MemoryLimit      uint   `toml:"memory_limit"`
-	InstructionLimit uint   `toml:"instruction_limit"`
-	OutputLimit      uint   `toml:"output_limit"`
+	Id               string `json:id"`
+	ScriptType       string `json:"script_type"`
+	ScriptFilename   string `json:"filename"`
+	ModuleDirectory  string `json:"module_directory"`
+	PreserveData     bool   `json:"preserve_data"`
+	MemoryLimit      uint   `json:"memory_limit"`
+	InstructionLimit uint   `json:"instruction_limit"`
+	OutputLimit      uint   `json:"output_limit"`
 	Config           map[string]interface{}
 }

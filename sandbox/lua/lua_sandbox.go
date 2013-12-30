@@ -26,6 +26,7 @@ import "C"
 
 import (
 	"fmt"
+	"github.com/dancannon/gofetch/message"
 	"github.com/dancannon/gofetch/sandbox"
 	"log"
 	"unsafe"
@@ -128,7 +129,7 @@ func go_lua_read_config(ptr unsafe.Pointer, c *C.char) (int, unsafe.Pointer, int
 
 type LuaSandbox struct {
 	lsb    *C.lua_sandbox
-	msg    *sandbox.Message
+	msg    *message.ExtractMessage
 	output func(s string)
 	config map[string]interface{}
 	field  int
@@ -184,7 +185,7 @@ func (this *LuaSandbox) LastError() string {
 	return C.GoString(C.lsb_get_error(this.lsb))
 }
 
-func (this *LuaSandbox) ProcessMessage(msg *sandbox.Message) int {
+func (this *LuaSandbox) ProcessMessage(msg *message.ExtractMessage) int {
 	this.field = 0
 	this.msg = msg
 	retval := int(C.process_message(this.lsb))

@@ -16,7 +16,9 @@ package js
 
 import (
 	"fmt"
+	"github.com/dancannon/gofetch/message"
 	"github.com/dancannon/gofetch/sandbox"
+	"github.com/davecgh/go-spew/spew"
 	"github.com/robertkrimen/otto"
 	_ "github.com/robertkrimen/otto/underscore"
 	"io/ioutil"
@@ -51,7 +53,7 @@ func writeValue(jsb *JsSandbox, call otto.FunctionCall) otto.Value {
 
 type JsSandbox struct {
 	or     *otto.Otto
-	msg    *sandbox.Message
+	msg    *message.ExtractMessage
 	script string
 	output func(s string)
 	config map[string]interface{}
@@ -122,9 +124,10 @@ func (this *JsSandbox) LastError() string {
 	return this.err.Error()
 }
 
-func (this *JsSandbox) ProcessMessage(msg *sandbox.Message) int {
+func (this *JsSandbox) ProcessMessage(msg *message.ExtractMessage) int {
 	this.msg = msg
 	ret, err := this.or.Call("processMessage", nil)
+	spew.Dump(err)
 	this.msg = nil
 
 	if err != nil {

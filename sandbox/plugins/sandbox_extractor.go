@@ -1,6 +1,7 @@
 package plugins
 
 import (
+	"github.com/dancannon/gofetch/message"
 	. "github.com/dancannon/gofetch/sandbox"
 	"github.com/dancannon/gofetch/sandbox/js"
 	"github.com/dancannon/gofetch/sandbox/lua"
@@ -40,6 +41,10 @@ func (s *SandboxExtractor) Init(config interface{}) (err error) {
 	return
 }
 
+func (e *SandboxExtractor) Setup(config interface{}) error {
+	return nil
+}
+
 func (s *SandboxExtractor) Shutdown() {
 	if s.sb != nil {
 		s.sb.Destroy()
@@ -47,7 +52,7 @@ func (s *SandboxExtractor) Shutdown() {
 	}
 }
 
-func (s *SandboxExtractor) Extract(msg *Message) (err error) {
+func (s *SandboxExtractor) Extract(msg *message.ExtractMessage) (err error) {
 	if s.sb == nil {
 		err = s.err
 		return
@@ -57,7 +62,7 @@ func (s *SandboxExtractor) Extract(msg *Message) (err error) {
 	if retval > 0 {
 		s.err = errors.New("FATAL: " + s.sb.LastError())
 	} else if retval < 0 {
-		s.err = fmt.Errorf("Failed extracting value: %s", msg.Name)
+		s.err = fmt.Errorf("Failed extracting value")
 	}
 	err = s.err
 	return

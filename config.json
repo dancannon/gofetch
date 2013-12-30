@@ -1,19 +1,11 @@
 {
-    "providers": [
-        {
-            "provider": "directory",
-            "params": {
-                "directory": "./rules"
-            }
-        },
-        {
-            "provider": "rethinkdb",
-            "params": {
-                "host": "localhost",
-                "port": "28015"
-            }
-        }
-    ],
+	"plugins": [
+		{
+			"id": "js_test",
+			"script_type": "js",
+			"filename": "js_plugins/test.js"
+		}
+	],
     "types": [
         {
             "id": "misc",
@@ -260,7 +252,7 @@
             }
         },
         {
-            "id": "flikr",
+            "id": "flickr",
             "priority": 5,
             "type": "misc",
             "urls": [
@@ -272,6 +264,19 @@
                     "params": {
                         "endpoint": "http://www.flickr.com/services/oembed/?url=%s&format=json"
                     }
+                }
+            }
+        },
+        {
+            "id": "stackoverflow",
+            "priority": 5,
+            "type": "misc",
+            "urls": [
+                "https?://(www.)?stackoverflow.com/questions/.*"
+            ],
+            "values": {
+                "@extractor": {
+                    "id": "js_test"
                 }
             }
         }
