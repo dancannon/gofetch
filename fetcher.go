@@ -3,7 +3,6 @@ package gofetch
 import (
 	"github.com/dancannon/gofetch/config"
 	"github.com/dancannon/gofetch/document"
-	. "github.com/dancannon/gofetch/message"
 	. "github.com/dancannon/gofetch/plugins"
 	. "github.com/dancannon/gofetch/sandbox/plugins"
 
@@ -14,8 +13,6 @@ import (
 	_ "github.com/dancannon/gofetch/plugins/text"
 	_ "github.com/dancannon/gofetch/plugins/title"
 	_ "github.com/dancannon/gofetch/plugins/url_mapper"
-
-	"github.com/imdario/mergo"
 
 	"fmt"
 	"io/ioutil"
@@ -66,7 +63,10 @@ func (f *Fetcher) Fetch(url string) (Result, error) {
 		// If the page was HTML then parse the HTMl otherwise return the plain
 		// text
 		if isContentTypeHtml(response) {
-			result = f.parseDocument(doc)
+			result, err = f.parseDocument(doc)
+			if err != nil {
+				return Result{}, err
+			}
 		} else {
 			text, err := ioutil.ReadAll(response.Body)
 			if err != nil {
@@ -99,13 +99,13 @@ func (f *Fetcher) Fetch(url string) (Result, error) {
 	return result, nil
 }
 
-func (f *Fetcher) parseDocument(doc *document.Document) Result {
+func (f *Fetcher) parseDocument(doc *document.Document) (Result, error) {
 	// Prepare document for parsing
 	cleanDocument(doc)
 
 	res := Result{
 		Url:      doc.Url,
-		PageType: "misc",
+		PageType: "unknown",
 	}
 	res.Content = make(map[string]interface{})
 
@@ -114,88 +114,112 @@ func (f *Fetcher) parseDocument(doc *document.Document) Result {
 		for _, url := range rule.Urls {
 			re := regexp.MustCompile(url)
 			if re.MatchString(doc.Url) {
+				// Set the base page type
 				res.PageType = rule.Type
-				res.Content = f.loadValues(rule.Values, doc, &res)
-				return res
+
+				value, typ, err := f.extractTopLevelValues(rule.Values, doc)
+				if err != nil {
+					return Result{}, err
+				}
+				if typ != "" {
+					res.PageType = typ
+				}
+				res.Content = value
+
+				return res, nil
 			}
 		}
 	}
 
-	return res
+	return res, nil
 }
 
-func (f *Fetcher) loadValues(values map[string]interface{}, doc *document.Document, r *Result) interface{} {
+// Check the first level of values for an extractor, if one is found then immediately
+// return the result of the extractor.
+func (f *Fetcher) extractTopLevelValues(values map[string]interface{}, doc *document.Document) (interface{}, string, error) {
+	for key, val := range values {
+		// If value is an extractor reference then run the extractor and merge
+		// the result. Extractors start with a '@'
+		if strings.Index(key, "@") == 0 || strings.Index(key, "_") == 0 {
+			// Ensure that the extractor config is in the right format
+			ec, ok := val.(map[string]interface{})
+			if !ok {
+				return nil, "", fmt.Errorf("The extractor configuration is invalid")
+			}
+
+			id, ok := ec["id"].(string)
+			if !ok {
+				return nil, "", fmt.Errorf("The extractor configuration is invalid")
+			}
+			params, ok := ec["params"].(map[string]interface{})
+			if !ok {
+				params = make(map[string]interface{})
+			}
+
+			if extractor := GetMultiExtractor(id); extractor != nil {
+				err := extractor.Setup(params)
+				if err != nil {
+					return nil, "", err
+				}
+
+				return extractor.ExtractValues(*doc)
+			} else {
+				break
+			}
+		}
+	}
+
+	value, err := f.extractValues(values, doc)
+	return value, "", err
+}
+
+func (f *Fetcher) extractValues(values map[string]interface{}, doc *document.Document) (interface{}, error) {
 	m := map[string]interface{}{}
 
 	for key, val := range values {
 		// If value is an extractor reference then run the extractor and merge
 		// the result. Extractors start with a '@'
-		if strings.Index(key, "@") == 0 {
+		if strings.Index(key, "@") == 0 || strings.Index(key, "_") == 0 {
 			// Ensure that the extractor config is in the right format
 			ec, ok := val.(map[string]interface{})
 			if !ok {
-				panic("The extractor configuration is invalid")
+				return nil, fmt.Errorf("The extractor configuration is invalid")
 			}
 
-			res := runExtractor(ec, doc, r)
+			id, ok := ec["id"].(string)
+			if !ok {
+				return nil, fmt.Errorf("The extractor configuration is invalid")
+			}
+			params, ok := ec["params"].(map[string]interface{})
+			if !ok {
+				params = make(map[string]interface{})
+			}
 
-			switch res := res.(type) {
-			case map[string]interface{}:
-				if err := mergo.Merge(&m, res); err != nil {
-					panic(err.Error())
+			if extractor := GetExtractor(id); extractor != nil {
+				err := extractor.Setup(params)
+				if err != nil {
+					return nil, err
 				}
-			default:
-				return res
+
+				return extractor.Extract(*doc)
+			} else {
+				return nil, fmt.Errorf("Extractor %s not found", id)
 			}
 		} else {
 			switch val := val.(type) {
 			case map[string]interface{}:
-				m[key] = f.loadValues(val, doc, r)
+				v, err := f.extractValues(val, doc)
+				if err != nil {
+					return nil, err
+				}
+				m[key] = v
 			default:
 				m[key] = val
 			}
 		}
 	}
 
-	return m
-}
-
-func runExtractor(config map[string]interface{}, doc *document.Document, res *Result) interface{} {
-	// Validate extractor config
-	id, ok := config["id"].(string)
-	if !ok {
-		panic("The extractor configuration is invalid")
-	}
-	params, ok := config["params"].(map[string]interface{})
-	if !ok {
-		params = make(map[string]interface{})
-	}
-
-	// Load and execute the extractor
-	if extractor, ok := Extractors[id]; ok {
-		err := extractor.Setup(params)
-		if err != nil {
-			panic(err.Error())
-		}
-
-		msg := &ExtractMessage{
-			Value:    nil,
-			Document: doc,
-		}
-
-		err = extractor.Extract(msg)
-		if err != nil {
-			return nil
-		}
-
-		if msg.PageType != "" {
-			res.PageType = msg.PageType
-		}
-
-		return msg.Value
-	} else {
-		panic(fmt.Sprintf("Extractor %s not found", id))
-	}
+	return m, nil
 }
 
 func (f *Fetcher) validateResult(r Result) error {

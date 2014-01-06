@@ -1,7 +1,7 @@
 package selector
 
 import (
-	. "github.com/dancannon/gofetch/message"
+	"github.com/dancannon/gofetch/document"
 	. "github.com/dancannon/gofetch/plugins"
 
 	"errors"
@@ -30,22 +30,22 @@ func (e *SelectorExtractor) Setup(config interface{}) error {
 	return nil
 }
 
-func (e *SelectorExtractor) Extract(msg *ExtractMessage) error {
-	doc := goquery.NewDocumentFromNode(msg.Document.Body.Node())
+func (e *SelectorExtractor) Extract(doc document.Document) (interface{}, error) {
+	qdoc := goquery.NewDocumentFromNode(doc.Body.Node())
 
-	n := doc.Find(e.selector)
+	n := qdoc.Find(e.selector)
 	if n.Length() == 0 {
-		return errors.New(fmt.Sprintf("Selector '%s' not found", e.selector))
+		return nil, errors.New(fmt.Sprintf("Selector '%s' not found", e.selector))
 	}
 
+	var value interface{}
 	if e.attribute == "" {
-		msg.Value = n.First().Text()
-
-		return nil
+		value = n.First().Text()
 	} else {
-		msg.Value, _ = n.First().Attr(e.attribute)
-		return nil
+		value, _ = n.First().Attr(e.attribute)
 	}
+
+	return value, nil
 }
 
 func init() {

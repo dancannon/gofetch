@@ -2,7 +2,6 @@ package selector_text
 
 import (
 	"github.com/dancannon/gofetch/document"
-	. "github.com/dancannon/gofetch/message"
 	. "github.com/dancannon/gofetch/plugins"
 	. "github.com/dancannon/gofetch/plugins/text"
 
@@ -36,19 +35,19 @@ func (e *SelectorTextExtractor) Setup(config interface{}) error {
 	return nil
 }
 
-func (e *SelectorTextExtractor) Extract(msg *ExtractMessage) error {
-	doc := goquery.NewDocumentFromNode(msg.Document.Body.Node())
+func (e *SelectorTextExtractor) Extract(doc document.Document) (interface{}, error) {
+	qdoc := goquery.NewDocumentFromNode(doc.Body.Node())
 
-	n := doc.Find(e.selector)
+	n := qdoc.Find(e.selector)
 	if n.Length() == 0 {
-		return errors.New(fmt.Sprintf("Selector '%s' not found", e.selector))
+		return nil, errors.New(fmt.Sprintf("Selector '%s' not found", e.selector))
 	}
 
 	// Create a new document using the selected node
-	msg.Document.Body = (*document.HtmlNode)(n.Get(0))
+	doc.Body = (*document.HtmlNode)(n.Get(0))
 
 	// Run the new document through the text selector
-	return e.textextractor.Extract(msg)
+	return e.textextractor.Extract(doc)
 }
 
 func init() {

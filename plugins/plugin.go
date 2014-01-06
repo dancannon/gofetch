@@ -1,11 +1,11 @@
 package plugins
 
 import (
-	"github.com/dancannon/gofetch/message"
+	"github.com/dancannon/gofetch/document"
 )
 
 var (
-	Extractors = make(map[string]Extractor)
+	plugins = make(map[string]Plugin)
 )
 
 type Plugin interface {
@@ -15,12 +15,35 @@ type Plugin interface {
 type Extractor interface {
 	Plugin
 
-	Extract(msg *message.ExtractMessage) error
+	Extract(doc document.Document) (interface{}, error)
+}
+
+type MultiExtractor interface {
+	Plugin
+
+	ExtractValues(doc document.Document) (interface{}, string, error)
 }
 
 func RegisterPlugin(name string, plugin Plugin) {
-	// Check if plugin is an extractor
-	if extractor, ok := plugin.(Extractor); ok {
-		Extractors[name] = extractor
+	plugins[name] = plugin
+}
+
+func GetExtractor(name string) Extractor {
+	if plugin, ok := plugins[name]; ok {
+		if extractor, ok := plugin.(Extractor); ok {
+			return extractor
+		}
 	}
+
+	return nil
+}
+
+func GetMultiExtractor(name string) MultiExtractor {
+	if plugin, ok := plugins[name]; ok {
+		if extractor, ok := plugin.(MultiExtractor); ok {
+			return extractor
+		}
+	}
+
+	return nil
 }

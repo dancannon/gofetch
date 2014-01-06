@@ -2,7 +2,6 @@ package text
 
 import (
 	"github.com/dancannon/gofetch/document"
-	. "github.com/dancannon/gofetch/message"
 	. "github.com/dancannon/gofetch/plugins"
 
 	"code.google.com/p/go.net/html"
@@ -94,8 +93,8 @@ func (e *TextExtractor) Setup(_ interface{}) error {
 	return nil
 }
 
-func (e *TextExtractor) Extract(msg *ExtractMessage) error {
-	blocks := e.parseDocument(msg.Document)
+func (e *TextExtractor) Extract(doc document.Document) (interface{}, error) {
+	blocks := e.parseDocument(doc)
 	blocks = e.clasifyBlocks(blocks)
 
 	content := ""
@@ -113,15 +112,13 @@ func (e *TextExtractor) Extract(msg *ExtractMessage) error {
 	}
 
 	if !hasContent {
-		msg.Value = ""
+		return "", nil
 	}
 
-	msg.Value = content
-
-	return nil
+	return content, nil
 }
 
-func (e *TextExtractor) parseDocument(d *document.Document) []TextBlock {
+func (e *TextExtractor) parseDocument(d document.Document) []TextBlock {
 	blocks := []TextBlock{}
 	currentBlock := TextBlock{}
 	flush := false

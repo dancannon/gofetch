@@ -1,7 +1,7 @@
 package url_mapper
 
 import (
-	. "github.com/dancannon/gofetch/message"
+	"github.com/dancannon/gofetch/document"
 	. "github.com/dancannon/gofetch/plugins"
 
 	"errors"
@@ -33,15 +33,13 @@ func (e *UrlMapperExtractor) Setup(config interface{}) error {
 	return nil
 }
 
-func (e *UrlMapperExtractor) Extract(msg *ExtractMessage) error {
+func (e *UrlMapperExtractor) Extract(doc document.Document) (interface{}, error) {
 	re, err := regexp.Compile(e.pattern)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
-	msg.Value = re.ReplaceAllString(msg.Document.Url, e.replacement)
-
-	return nil
+	return re.ReplaceAllString(doc.Url, e.replacement), nil
 }
 
 func init() {

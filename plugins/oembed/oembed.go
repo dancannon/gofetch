@@ -1,7 +1,7 @@
 package oembed
 
 import (
-	. "github.com/dancannon/gofetch/message"
+	"github.com/dancannon/gofetch/document"
 	. "github.com/dancannon/gofetch/plugins"
 
 	"encoding/json"
@@ -34,12 +34,12 @@ func (e *OEmbedExtractor) Setup(config interface{}) error {
 	return nil
 }
 
-func (e *OEmbedExtractor) Extract(msg *ExtractMessage) error {
-	url := fmt.Sprintf(e.endpoint, url.QueryEscape(msg.Document.Url))
+func (e *OEmbedExtractor) Extract(doc document.Document) (interface{}, error) {
+	url := fmt.Sprintf(e.endpoint, url.QueryEscape(doc.Url))
 
 	response, err := http.Get(url)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	defer response.Body.Close()
@@ -51,18 +51,15 @@ func (e *OEmbedExtractor) Extract(msg *ExtractMessage) error {
 		decoder := json.NewDecoder(response.Body)
 		err = decoder.Decode(&res)
 		if err != nil {
-			return err
+			return nil, err
 		}
 	} else {
 		decoder := xml.NewDecoder(response.Body)
 		err = decoder.Decode(&res)
 		if err != nil {
-			return err
+			return nil, err
 		}
 	}
-
-	// Override the result page type
-	msg.PageType = res["type"].(string)
 
 	switch res["type"] {
 	case "photo":
@@ -99,9 +96,8 @@ func (e *OEmbedExtractor) Extract(msg *ExtractMessage) error {
 		}
 	}
 
-	msg.Value = res
-
-	return nil
+	// return res, res["type"].(string), err
+	return res, nil
 }
 
 func init() {

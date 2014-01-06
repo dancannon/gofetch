@@ -8,7 +8,12 @@
 	],
     "types": [
         {
-            "id": "misc",
+            "id": "unknown",
+            "validate": false,
+            "values": {}
+        },
+        {
+            "id": "general",
             "validate": false,
             "values": {
                 "title": {
@@ -238,7 +243,7 @@
         {
             "id": "youtube",
             "priority": 5,
-            "type": "misc",
+            "type": "unknown",
             "urls": [
                 "https?://(www.)?youtube.com/watch\\?v=.*"
             ],
@@ -254,7 +259,7 @@
         {
             "id": "flickr",
             "priority": 5,
-            "type": "misc",
+            "type": "unknown",
             "urls": [
                 "https?://(www.)?flickr.com/photos/.*"
             ],
@@ -270,7 +275,7 @@
         {
             "id": "stackoverflow",
             "priority": 5,
-            "type": "misc",
+            "type": "unknown",
             "urls": [
                 "https?://(www.)?stackoverflow.com/questions/.*"
             ],

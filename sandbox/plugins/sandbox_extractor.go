@@ -1,10 +1,9 @@
 package plugins
 
 import (
-	"github.com/dancannon/gofetch/message"
+	"github.com/dancannon/gofetch/document"
 	. "github.com/dancannon/gofetch/sandbox"
 	"github.com/dancannon/gofetch/sandbox/js"
-	"github.com/dancannon/gofetch/sandbox/lua"
 
 	"errors"
 	"fmt"
@@ -23,11 +22,6 @@ func (s *SandboxExtractor) Init(config interface{}) (err error) {
 	s.sbc = config.(*SandboxConfig)
 
 	switch s.sbc.ScriptType {
-	case "lua":
-		s.sb, err = lua.CreateLuaSandbox(s.sbc)
-		if err != nil {
-			return
-		}
 	case "js":
 		s.sb, err = js.CreateJsSandbox(s.sbc)
 		if err != nil {
@@ -52,10 +46,14 @@ func (s *SandboxExtractor) Shutdown() {
 	}
 }
 
-func (s *SandboxExtractor) Extract(msg *message.ExtractMessage) (err error) {
+func (s *SandboxExtractor) Extract(doc document.Document) (interface{}, error) {
 	if s.sb == nil {
-		err = s.err
-		return
+		return nil, s.err
+	}
+
+	// Create message
+	msg := &SandboxMessage{
+		Document: doc,
 	}
 
 	retval := s.sb.ProcessMessage(msg)
@@ -64,6 +62,26 @@ func (s *SandboxExtractor) Extract(msg *message.ExtractMessage) (err error) {
 	} else if retval < 0 {
 		s.err = fmt.Errorf("Failed extracting value")
 	}
-	err = s.err
-	return
+
+	return msg.Value, s.err
+}
+
+func (s *SandboxExtractor) ExtractValues(doc document.Document) (interface{}, string, error) {
+	if s.sb == nil {
+		return nil, "", s.err
+	}
+
+	// Create message
+	msg := &SandboxMessage{
+		Document: doc,
+	}
+
+	retval := s.sb.ProcessMessage(msg)
+	if retval > 0 {
+		s.err = errors.New("FATAL: " + s.sb.LastError())
+	} else if retval < 0 {
+		s.err = fmt.Errorf("Failed extracting value")
+	}
+
+	return msg.Value, msg.PageType, s.err
 }

@@ -1,7 +1,7 @@
 package sandbox
 
 import (
-	. "github.com/dancannon/gofetch/message"
+	"github.com/dancannon/gofetch/document"
 )
 
 const (
@@ -14,6 +14,13 @@ const (
 	TYPE_OUTPUT       = 2
 )
 
+type SandboxMessage struct {
+	PageType string
+	Value    interface{}
+
+	Document document.Document
+}
+
 type Sandbox interface {
 	// Sandbox control
 	Init() error
@@ -25,7 +32,7 @@ type Sandbox interface {
 	LastError() string
 
 	// Plugin functions
-	ProcessMessage(msg *ExtractMessage) int
+	ProcessMessage(msg *SandboxMessage) int
 }
 
 type SandboxConfig struct {

@@ -2,7 +2,7 @@ package title
 
 import (
 	"code.google.com/p/go.net/html"
-	. "github.com/dancannon/gofetch/message"
+	"github.com/dancannon/gofetch/document"
 	. "github.com/dancannon/gofetch/plugins"
 	"sort"
 	"strings"
@@ -26,7 +26,7 @@ func (e *TitleExtractor) Setup(_ interface{}) error {
 	return nil
 }
 
-func (e *TitleExtractor) Extract(msg *ExtractMessage) error {
+func (e *TitleExtractor) Extract(doc document.Document) (interface{}, error) {
 	var currTitle title
 
 	titles := titleSlice{}
@@ -69,18 +69,16 @@ func (e *TitleExtractor) Extract(msg *ExtractMessage) error {
 		}
 	}
 
-	f(msg.Document.Body.Node())
+	f(doc.Body.Node())
 
 	sort.Sort(titles)
 	for _, t := range titles {
-		if strings.Contains(msg.Document.Title, t.text) {
-			msg.Value = t.text
-			return nil
+		if strings.Contains(doc.Title, t.text) {
+			return t.text, nil
 		}
 	}
 
-	msg.Value = msg.Document.Title
-	return nil
+	return doc.Title, nil
 }
 
 func init() {

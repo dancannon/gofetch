@@ -1,7 +1,7 @@
 package opengraph
 
 import (
-	. "github.com/dancannon/gofetch/message"
+	"github.com/dancannon/gofetch/document"
 	. "github.com/dancannon/gofetch/plugins"
 
 	"strings"
@@ -14,10 +14,10 @@ func (e *OpengraphExtractor) Setup(_ interface{}) error {
 	return nil
 }
 
-func (e *OpengraphExtractor) Extract(msg *ExtractMessage) error {
+func (e *OpengraphExtractor) Extract(doc document.Document) (interface{}, error) {
 	properties := map[string]interface{}{}
 
-	for _, meta := range msg.Document.Meta {
+	for _, meta := range doc.Meta {
 		var property, content string
 
 		for key, val := range meta {
@@ -33,9 +33,7 @@ func (e *OpengraphExtractor) Extract(msg *ExtractMessage) error {
 		}
 	}
 
-	msg.Value = properties
-
-	return nil
+	return properties, nil
 }
 
 func init() {

@@ -16,9 +16,7 @@ package js
 
 import (
 	"fmt"
-	"github.com/dancannon/gofetch/message"
 	"github.com/dancannon/gofetch/sandbox"
-	"github.com/davecgh/go-spew/spew"
 	"github.com/robertkrimen/otto"
 	_ "github.com/robertkrimen/otto/underscore"
 	"io/ioutil"
@@ -39,7 +37,19 @@ func readConfig(jsb *JsSandbox, call otto.FunctionCall) otto.Value {
 	return result
 }
 
-func writeValue(jsb *JsSandbox, call otto.FunctionCall) otto.Value {
+func setValue(jsb *JsSandbox, call otto.FunctionCall) otto.Value {
+	if jsb.msg == nil {
+		result, _ := otto.ToValue(1)
+		return result
+	}
+
+	value, _ := call.Argument(0).Export()
+	jsb.msg.Value = value
+
+	return otto.UndefinedValue()
+}
+
+func setPageType(jsb *JsSandbox, call otto.FunctionCall) otto.Value {
 	if jsb.msg == nil {
 		result, _ := otto.ToValue(1)
 		return result
@@ -53,7 +63,7 @@ func writeValue(jsb *JsSandbox, call otto.FunctionCall) otto.Value {
 
 type JsSandbox struct {
 	or     *otto.Otto
-	msg    *message.ExtractMessage
+	msg    *sandbox.SandboxMessage
 	script string
 	output func(s string)
 	config map[string]interface{}
@@ -79,8 +89,11 @@ func (this *JsSandbox) Init() error {
 	this.or.Set("readConfig", func(call otto.FunctionCall) otto.Value {
 		return readConfig(this, call)
 	})
-	this.or.Set("writeValue", func(call otto.FunctionCall) otto.Value {
-		return writeValue(this, call)
+	this.or.Set("setValue", func(call otto.FunctionCall) otto.Value {
+		return setValue(this, call)
+	})
+	this.or.Set("setPageType", func(call otto.FunctionCall) otto.Value {
+		return setPageType(this, call)
 	})
 
 	// Run script
@@ -124,10 +137,9 @@ func (this *JsSandbox) LastError() string {
 	return this.err.Error()
 }
 
-func (this *JsSandbox) ProcessMessage(msg *message.ExtractMessage) int {
+func (this *JsSandbox) ProcessMessage(msg *sandbox.SandboxMessage) int {
 	this.msg = msg
 	ret, err := this.or.Call("processMessage", nil)
-	spew.Dump(err)
 	this.msg = nil
 
 	if err != nil {
