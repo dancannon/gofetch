@@ -1,11 +1,4 @@
 {
-	"plugins": [
-		{
-			"id": "js_test",
-			"script_type": "js",
-			"filename": "js_plugins/test.js"
-		}
-	],
     "types": [
         {
             "id": "unknown",

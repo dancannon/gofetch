@@ -5,7 +5,6 @@ import (
 	"github.com/dancannon/gofetch/document"
 	. "github.com/dancannon/gofetch/plugins"
 	. "github.com/dancannon/gofetch/sandbox/plugins"
-	"github.com/davecgh/go-spew/spew"
 	neturl "net/url"
 
 	_ "github.com/dancannon/gofetch/plugins/oembed"
@@ -116,17 +115,21 @@ func (f *Fetcher) parseDocument(doc *document.Document) (Result, error) {
 	if err != nil {
 		return Result{}, err
 	}
-	spew.Dump(strings.TrimLeft(url.Host, "www."), url.RequestURI())
 
 	// Iterate through all registered rules and find one that can be used
 	for _, rule := range f.Config.Rules {
+		var re *regexp.Regexp
+		// Clean host
+		re = regexp.MustCompile(".*?://")
+		host := re.ReplaceAllString(strings.TrimLeft(url.Host, "www."), "")
+
 		// Check host
-		if strings.TrimLeft(url.Host, "www.") != rule.Host {
+		if host != rule.Host {
 			continue
 		}
 
 		// Check path against the path regular expression
-		re := regexp.MustCompile(rule.PathPattern)
+		re = regexp.MustCompile(rule.PathPattern)
 		if !re.MatchString(url.RequestURI()) {
 			continue
 		}
