@@ -12,7 +12,7 @@
                 "title": {
                     "required": true
                 },
-                "text": {
+                "content": {
                     "required": true
                 }
             }
