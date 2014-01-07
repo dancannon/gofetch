@@ -1,277 +1,270 @@
 {
-    "types": [
-        {
-            "id": "unknown",
-            "validate": false,
-            "values": {}
-        },
-        {
-            "id": "general",
-            "validate": false,
-            "values": {
-                "title": {
-                    "required": true
-                },
-                "content": {
-                    "required": true
-                }
-            }
-        },
-        {
-            "id": "text",
-            "values": {
-                "title": {
-                    "required": true
-                },
-                "author": {
-                    "required": false,
-                    "values": {
-                        "name": {
-                            "required": true
-                        },
-                        "url": {
-                            "required": false
-                        }
-                    }
-                },
-                "published": {
-                    "required": false
-                },
-                "text": {
-                    "required": true
-                }
-            }
-        },
-        {
-            "id": "photo",
-            "values": {
-                "title": {
-                    "required": true
-                },
-                "caption": {
-                    "required": false
-                },
-                "author": {
-                    "required": false,
-                    "values": {
-                        "name": {
-                            "required": true
-                        },
-                        "url": {
-                            "required": false
-                        }
-                    }
-                },
-                "thumbnail": {
-                    "required": false,
-                    "values": {
-                        "url": {
-                            "required": true
-                        },
-                        "width": {
-                            "required": false
-                        },
-                        "height": {
-                            "required": false
-                        }
-                    }
-                },
-                "url": {
-                    "required": true
-                },
-                "height": {
-                    "required": false
-                },
-                "width": {
-                    "required": false
-                }
-            }
-        },
-        {
-            "id": "video",
-            "values": {
-                "title": {
-                    "required": true
-                },
-                "description": {
-                    "required": false
-                },
-                "author": {
-                    "required": false,
-                    "values": {
-                        "name": {
-                            "required": true
-                        },
-                        "url": {
-                            "required": true
-                        }
-                    }
-                },
-                "thumbnail": {
-                    "required": false,
-                    "values": {
-                        "url": {
-                            "required": true
-                        },
-                        "width": {
-                            "required": true
-                        },
-                        "height": {
-                            "required": true
-                        }
-                    }
-                },
-                "html": {
-                    "required": true
-                }
-            }
-        },
-        {
-            "id": "rich",
-            "values": {
-                "html": {
-                    "required": true
-                },
-                "height": {
-                    "required": false
-                },
-                "width": {
-                    "required": false
-                }
-            }
-        }
-    ],
-    "rules": [
-        {
-            "id": "text_universal",
-            "priority": 0,
-            "type": "text",
-            "urls": [
-                ".*"
-            ],
-            "values": {
-                "title": {
-                    "@extractor": {
-                        "id": "title"
-                    }
-                },
-                "text": {
-                    "@extractor": {
-                        "id": "text"
-                    }
-                }
-            }
-        },
-        {
-            "id": "imgur",
-            "priority": 5,
-            "type": "photo",
-            "host": "imgur.com",
-            "path_pattern": "/[a-zA-Z0-9]+",
-            "values": {
-                "title": {
-                    "@extractor": {
-                        "id": "selector",
-                        "params": {
-                            "selector": "#image-title"
-                        }
-                    }
-                },
-                "url": {
-                    "@extractor": {
-                        "id": "selector",
-                        "params": {
-                            "selector": "#image img",
-                            "attribute": "src"
-                        }
-                    }
-                }
-            }
-        },
-        {
-            "id": "bbc_news",
-            "priority": 5,
-            "type": "text",
-            "host": "bbc.co.uk",
-            "path_pattern": "/news/.*",
-            "values": {
-                "title": {
-                    "@extractor": {
-                        "id": "selector",
-                        "params": {
-                            "selector": ".story-header"
-                        }
-                    }
-                },
-                "author": {
-                	"name": {
-                		"@extractor": {
-                		    "id": "selector",
-                		    "params": {
-                		        "selector": ".byline-name"
-                		    }
-                		}
-                	}
-                },
-                "published": {
-                    "@extractor": {
-                        "id": "selector",
-                        "params": {
-                            "selector": ".story-date .date"
-                        }
-                    }
-                },
-                "text": {
-                    "@extractor": {
-                        "id": "selector_text",
-                        "params": {
-                            "selector": ".story-body"
-                        }
-                    }
-                }
-            }
-        },
-        {
-            "id": "youtube",
-            "priority": 5,
-            "type": "unknown",
-            "host": "youtube.com",
-            "path_pattern": "/watch?.*",
-            "values": {
-                "@extractor": {
-                    "id": "oembed",
-                    "params": {
-                        "endpoint": "http://www.youtube.com/oembed?url=%s&format=json"
-                    }
-                }
-            }
-        },
-        {
-            "id": "flickr",
-            "priority": 5,
-            "type": "unknown",
-            "host": "flickr.com",
-            "path_pattern": "/photos/.*",
-            "values": {
-                "@extractor": {
-                    "id": "oembed",
-                    "params": {
-                        "endpoint": "http://www.flickr.com/services/oembed/?url=%s&format=json"
-                    }
-                }
-            }
-        },
-        {
-            "id": "stackoverflow",
-            "priority": 5,
-            "type": "unknown",
-            "host": "stackoverflow.com",
-            "path_pattern": "/questions/.*",
-            "values": {
-                "@extractor": {
-                    "id": "js_test"
-                }
-            }
-        }
-    ]
+	"plugins": [{
+		"id": "js_test",
+		"script_type": "js",
+		"filename": "js_plugins/test.js"
+	}],
+	"types": [{
+		"id": "unknown",
+		"validate": false,
+		"values": {
+
+		}
+	}, {
+		"id": "general",
+		"validate": false,
+		"values": {
+			"title": {
+				"required": true
+			},
+			"content": {
+				"required": true
+			}
+		}
+	}, {
+		"id": "text",
+		"values": {
+			"title": {
+				"required": true
+			},
+			"author": {
+				"required": false,
+				"values": {
+					"name": {
+						"required": true
+					},
+					"url": {
+						"required": false
+					}
+				}
+			},
+			"published": {
+				"required": false
+			},
+			"text": {
+				"required": true
+			}
+		}
+	}, {
+		"id": "photo",
+		"values": {
+			"title": {
+				"required": true
+			},
+			"caption": {
+				"required": false
+			},
+			"author": {
+				"required": false,
+				"values": {
+					"name": {
+						"required": true
+					},
+					"url": {
+						"required": false
+					}
+				}
+			},
+			"thumbnail": {
+				"required": false,
+				"values": {
+					"url": {
+						"required": true
+					},
+					"width": {
+						"required": false
+					},
+					"height": {
+						"required": false
+					}
+				}
+			},
+			"url": {
+				"required": true
+			},
+			"height": {
+				"required": false
+			},
+			"width": {
+				"required": false
+			}
+		}
+	}, {
+		"id": "video",
+		"values": {
+			"title": {
+				"required": true
+			},
+			"description": {
+				"required": false
+			},
+			"author": {
+				"required": false,
+				"values": {
+					"name": {
+						"required": true
+					},
+					"url": {
+						"required": true
+					}
+				}
+			},
+			"thumbnail": {
+				"required": false,
+				"values": {
+					"url": {
+						"required": true
+					},
+					"width": {
+						"required": true
+					},
+					"height": {
+						"required": true
+					}
+				}
+			},
+			"html": {
+				"required": true
+			}
+		}
+	}, {
+		"id": "rich",
+		"values": {
+			"html": {
+				"required": true
+			},
+			"height": {
+				"required": false
+			},
+			"width": {
+				"required": false
+			}
+		}
+	}],
+	"rules": [{
+		"id": "text_universal",
+		"priority": 0,
+		"type": "text",
+		"urls": [
+			".*"
+		],
+		"values": {
+			"title": {
+				"@extractor": {
+					"id": "title"
+				}
+			},
+			"text": {
+				"@extractor": {
+					"id": "text"
+				}
+			}
+		}
+	}, {
+		"id": "imgur",
+		"priority": 5,
+		"type": "photo",
+		"host": "imgur.com",
+		"path_pattern": "/[a-zA-Z0-9]+",
+		"values": {
+			"title": {
+				"@extractor": {
+					"id": "selector",
+					"params": {
+						"selector": "#image-title"
+					}
+				}
+			},
+			"url": {
+				"@extractor": {
+					"id": "selector",
+					"params": {
+						"selector": "#image img",
+						"attribute": "src"
+					}
+				}
+			}
+		}
+	}, {
+		"id": "bbc_news",
+		"priority": 5,
+		"type": "text",
+		"host": "bbc.co.uk",
+		"path_pattern": "/news/.*",
+		"values": {
+			"title": {
+				"@extractor": {
+					"id": "selector",
+					"params": {
+						"selector": ".story-header"
+					}
+				}
+			},
+			"author": {
+				"name": {
+					"@extractor": {
+						"id": "selector",
+						"params": {
+							"selector": ".byline-name"
+						}
+					}
+				}
+			},
+			"published": {
+				"@extractor": {
+					"id": "selector",
+					"params": {
+						"selector": ".story-date .date"
+					}
+				}
+			},
+			"text": {
+				"@extractor": {
+					"id": "selector_text",
+					"params": {
+						"selector": ".story-body"
+					}
+				}
+			}
+		}
+	}, {
+		"id": "youtube",
+		"priority": 5,
+		"type": "unknown",
+		"host": "youtube.com",
+		"path_pattern": "/watch?.*",
+		"values": {
+			"@extractor": {
+				"id": "oembed",
+				"params": {
+					"endpoint": "http://www.youtube.com/oembed?url=%s&format=json"
+				}
+			}
+		}
+	}, {
+		"id": "flickr",
+		"priority": 5,
+		"type": "unknown",
+		"host": "flickr.com",
+		"path_pattern": "/photos/.*",
+		"values": {
+			"@extractor": {
+				"id": "oembed",
+				"params": {
+					"endpoint": "http://www.flickr.com/services/oembed/?url=%s&format=json"
+				}
+			}
+		}
+	}, {
+		"id": "stackoverflow",
+		"priority": 5,
+		"type": "unknown",
+		"host": "stackoverflow.com",
+		"path_pattern": "/questions/.*",
+		"values": {
+			"@extractor": {
+				"id": "js_test"
+			}
+		}
+	}]
 }

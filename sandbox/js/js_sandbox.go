@@ -24,15 +24,32 @@ import (
 	"os"
 )
 
-func readConfig(jsb *JsSandbox, call otto.FunctionCall) otto.Value {
+func getValue(jsb *JsSandbox, call otto.FunctionCall) otto.Value {
 	if jsb.msg == nil {
 		result, _ := otto.ToValue(1)
 		return result
 	}
 
 	name, _ := call.Argument(0).ToString()
-	value := jsb.config[name]
-	result, _ := otto.ToValue(value)
+	var result otto.Value
+	switch name {
+	case "PageType":
+		result, _ = otto.ToValue(jsb.msg.PageType)
+	case "Value":
+		result, _ = otto.ToValue(jsb.msg.Value)
+	case "Document.Url":
+		result, _ = otto.ToValue(jsb.msg.Document.Url)
+	case "Document.Title":
+		result, _ = otto.ToValue(jsb.msg.Document.Title)
+	case "Document.Meta":
+		result, _ = otto.ToValue(jsb.msg.Document.Meta)
+	case "Document.Doc":
+		result, _ = jsb.or.ToValue(jsb.msg.Document.Doc)
+	case "Document.Body":
+		result, _ = jsb.or.ToValue(jsb.msg.Document.Body)
+	default:
+		result = otto.UndefinedValue()
+	}
 
 	return result
 }
@@ -86,8 +103,8 @@ func CreateJsSandbox(conf *sandbox.SandboxConfig) (sandbox.Sandbox, error) {
 
 func (this *JsSandbox) Init() error {
 	// Load internal functions
-	this.or.Set("readConfig", func(call otto.FunctionCall) otto.Value {
-		return readConfig(this, call)
+	this.or.Set("getValue", func(call otto.FunctionCall) otto.Value {
+		return getValue(this, call)
 	})
 	this.or.Set("setValue", func(call otto.FunctionCall) otto.Value {
 		return setValue(this, call)
