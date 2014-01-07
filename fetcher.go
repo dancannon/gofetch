@@ -5,6 +5,8 @@ import (
 	"github.com/dancannon/gofetch/document"
 	. "github.com/dancannon/gofetch/plugins"
 	. "github.com/dancannon/gofetch/sandbox/plugins"
+	"github.com/davecgh/go-spew/spew"
+	neturl "net/url"
 
 	_ "github.com/dancannon/gofetch/plugins/oembed"
 	_ "github.com/dancannon/gofetch/plugins/opengraph"
@@ -109,26 +111,39 @@ func (f *Fetcher) parseDocument(doc *document.Document) (Result, error) {
 	}
 	res.Content = make(map[string]interface{})
 
+	// Parse the request URL
+	url, err := neturl.Parse(doc.Url)
+	if err != nil {
+		return Result{}, err
+	}
+	spew.Dump(strings.TrimLeft(url.Host, "www."), url.RequestURI())
+
 	// Iterate through all registered rules and find one that can be used
 	for _, rule := range f.Config.Rules {
-		for _, url := range rule.Urls {
-			re := regexp.MustCompile(url)
-			if re.MatchString(doc.Url) {
-				// Set the base page type
-				res.PageType = rule.Type
-
-				value, typ, err := f.extractTopLevelValues(rule.Values, doc)
-				if err != nil {
-					return Result{}, err
-				}
-				if typ != "" {
-					res.PageType = typ
-				}
-				res.Content = value
-
-				return res, nil
-			}
+		// Check host
+		if strings.TrimLeft(url.Host, "www.") != rule.Host {
+			continue
 		}
+
+		// Check path against the path regular expression
+		re := regexp.MustCompile(rule.PathPattern)
+		if !re.MatchString(url.RequestURI()) {
+			continue
+		}
+
+		// Set the base page type
+		res.PageType = rule.Type
+
+		value, typ, err := f.extractTopLevelValues(rule.Values, doc)
+		if err != nil {
+			return Result{}, err
+		}
+		if typ != "" {
+			res.PageType = typ
+		}
+		res.Content = value
+
+		return res, nil
 	}
 
 	return res, nil

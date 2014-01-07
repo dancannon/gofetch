@@ -1,11 +1,12 @@
 package config
 
 type Rule struct {
-	Id       string                 `json:"id"`
-	Type     string                 `json:"type"`
-	Urls     []string               `json:"urls"`
-	Values   map[string]interface{} `json:"values"`
-	Priority int                    `json:"priority,omitempty"`
+	Id          string                 `json:"id"`
+	Type        string                 `json:"type"`
+	Host        string                 `json:"host"`
+	PathPattern string                 `json:"path_pattern"`
+	Values      map[string]interface{} `json:"values"`
+	Priority    int                    `json:"priority,omitempty"`
 }
 
 type ProviderConfig struct {

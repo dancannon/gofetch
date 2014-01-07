@@ -173,9 +173,8 @@
             "id": "imgur",
             "priority": 5,
             "type": "photo",
-            "urls": [
-                "http://imgur.com/[a-zA-Z0-9]+"
-            ],
+            "host": "imgur.com",
+            "path_pattern": "/[a-zA-Z0-9]+",
             "values": {
                 "title": {
                     "@extractor": {
@@ -200,9 +199,8 @@
             "id": "bbc_news",
             "priority": 5,
             "type": "text",
-            "urls": [
-                "http://www.bbc.co.uk/news/.*"
-            ],
+            "host": "bbc.co.uk",
+            "path_pattern": "/news/.*",
             "values": {
                 "title": {
                     "@extractor": {
@@ -244,9 +242,8 @@
             "id": "youtube",
             "priority": 5,
             "type": "unknown",
-            "urls": [
-                "https?://(www.)?youtube.com/watch\\?v=.*"
-            ],
+            "host": "youtube.com",
+            "path_pattern": "/watch?.*",
             "values": {
                 "@extractor": {
                     "id": "oembed",
@@ -260,9 +257,8 @@
             "id": "flickr",
             "priority": 5,
             "type": "unknown",
-            "urls": [
-                "https?://(www.)?flickr.com/photos/.*"
-            ],
+            "host": "flickr.com",
+            "path_pattern": "/photos/.*",
             "values": {
                 "@extractor": {
                     "id": "oembed",
@@ -276,9 +272,8 @@
             "id": "stackoverflow",
             "priority": 5,
             "type": "unknown",
-            "urls": [
-                "https?://(www.)?stackoverflow.com/questions/.*"
-            ],
+            "host": "stackoverflow.com",
+            "path_pattern": "/questions/.*",
             "values": {
                 "@extractor": {
                     "id": "js_test"
