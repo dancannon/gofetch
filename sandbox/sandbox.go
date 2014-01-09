@@ -36,13 +36,8 @@ type Sandbox interface {
 }
 
 type SandboxConfig struct {
-	Id               string `json:id"`
-	ScriptType       string `json:"script_type"`
-	ScriptFilename   string `json:"filename"`
-	ModuleDirectory  string `json:"module_directory"`
-	PreserveData     bool   `json:"preserve_data"`
-	MemoryLimit      uint   `json:"memory_limit"`
-	InstructionLimit uint   `json:"instruction_limit"`
-	OutputLimit      uint   `json:"output_limit"`
-	Config           map[string]interface{}
+	Id         string `json:id"`
+	Script     string `json:"script"`
+	ScriptType string `json:"script_type"`
+	Config     map[string]interface{}
 }

@@ -1,7 +1,7 @@
 function processMessage() {
     // Parse document
     var doc = getValue("Document.Body");
-    f(doc)
+    f(doc);
 
     // Write the results
     setValue(links);
@@ -26,7 +26,7 @@ var f = function(n) {
 
 
     var c;
-    for (c = n.FirstChild; c != null; c = c.NextSibling) {
-        f(c)
+    for (c = n.FirstChild; c !== null; c = c.NextSibling) {
+        f(c);
     }
-}
+};

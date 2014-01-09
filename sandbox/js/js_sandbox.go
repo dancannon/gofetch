@@ -19,9 +19,7 @@ import (
 	"github.com/dancannon/gofetch/sandbox"
 	"github.com/robertkrimen/otto"
 	_ "github.com/robertkrimen/otto/underscore"
-	"io/ioutil"
 	"log"
-	"os"
 )
 
 func getValue(jsb *JsSandbox, call otto.FunctionCall) otto.Value {
@@ -90,7 +88,7 @@ type JsSandbox struct {
 func CreateJsSandbox(conf *sandbox.SandboxConfig) (sandbox.Sandbox, error) {
 	jsb := new(JsSandbox)
 	jsb.or = otto.New()
-	jsb.script = conf.ScriptFilename
+	jsb.script = conf.Script
 
 	if jsb.or == nil {
 		return nil, fmt.Errorf("Sandbox creation failed")
@@ -114,21 +112,8 @@ func (this *JsSandbox) Init() error {
 	})
 
 	// Run script
-	var script []byte
 	var err error
-
-	if this.script == "" || this.script == "-" {
-		script, err = ioutil.ReadAll(os.Stdin)
-		if err != nil {
-			return fmt.Errorf("Can't read stdin: %v\n", err)
-		}
-	} else {
-		script, err = ioutil.ReadFile(this.script)
-		if err != nil {
-			return fmt.Errorf("Can't open file \"%v\": %v\n", this.script, err)
-		}
-	}
-	_, err = this.or.Run(string(script))
+	_, err = this.or.Run(this.script)
 	this.err = err
 
 	return err
