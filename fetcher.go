@@ -111,9 +111,10 @@ func (f *Fetcher) parseDocument(doc *document.Document) (Result, error) {
 		// Clean host
 		re = regexp.MustCompile(".*?://")
 		host := re.ReplaceAllString(strings.TrimLeft(url.Host, "www."), "")
+		ruleHost := re.ReplaceAllString(strings.TrimLeft(rule.Host, "www."), "")
 
 		// Check host
-		if host != rule.Host {
+		if host != ruleHost {
 			continue
 		}
 

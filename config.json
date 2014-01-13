@@ -247,14 +247,10 @@
 		"type": "unknown",
 		"host": "flickr.com",
 		"path_pattern": "/photos/.*",
-		"values": {
-			"@extractor": {
-				"id": "oembed",
-				"params": {
-					"endpoint": "http://www.flickr.com/services/oembed/?url=%s&format=json"
-				}
-			}
-		}
+
+		            "values": {
+						"content":  "Picture"
+					}
 	}, {
 		"id": "stackoverflow",
 		"priority": 5,
