@@ -12,6 +12,10 @@ type Plugin interface {
 	Setup(config interface{}) error
 }
 
+type Supported interface {
+	Supports(doc document.Document) (bool, error)
+}
+
 type Extractor interface {
 	Plugin
 

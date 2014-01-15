@@ -235,10 +235,7 @@
 		"path_pattern": "/watch?.*",
 		"values": {
 			"@extractor": {
-				"id": "oembed",
-				"params": {
-					"endpoint": "http://www.youtube.com/oembed?url=%s&format=json"
-				}
+				"id": "opengraph"
 			}
 		}
 	}, {

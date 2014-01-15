@@ -1,6 +1,7 @@
 package oembed
 
 import (
+	"code.google.com/p/go.net/html"
 	"github.com/dancannon/gofetch/document"
 	. "github.com/dancannon/gofetch/plugins"
 
@@ -34,12 +35,55 @@ func (e *OEmbedExtractor) Setup(config interface{}) error {
 	return nil
 }
 
-func (e *OEmbedExtractor) Extract(doc document.Document) (interface{}, error) {
+func (e *OEmbedExtractor) Supports(doc document.Document) (bool, error) {
+	// Look for an oembed like tag
+	var findTag func(*html.Node) bool
+	findTag = func(n *html.Node) bool {
+		if n.Type == html.ElementNode {
+			if n.Data == "like" {
+				// Load values
+				var typ, href string
+				for _, attr := range n.Attr {
+					if attr.Key == "type" {
+						typ = attr.Val
+					} else if attr.Key == "href" {
+						href = attr.Val
+					}
+
+					// Check if type is a valid oembed discovery type
+					if typ == "application/json+oembed" {
+						e.format = "json"
+						e.endpoint = href
+
+						return true
+					} else if typ == "text/xml+oembed" {
+						e.format = "xml"
+						e.endpoint = href
+
+						return true
+					}
+				}
+			}
+		}
+
+		for c := n.FirstChild; c != nil; c = c.NextSibling {
+			if findTag(c) {
+				return true
+			}
+		}
+
+		return false
+	}
+
+	return findTag(doc.Doc.Node()), nil
+}
+
+func (e *OEmbedExtractor) ExtractValues(doc document.Document) (interface{}, string, error) {
 	url := fmt.Sprintf(e.endpoint, url.QueryEscape(doc.Url))
 
 	response, err := http.Get(url)
 	if err != nil {
-		return nil, err
+		return nil, "", err
 	}
 
 	defer response.Body.Close()
@@ -51,13 +95,13 @@ func (e *OEmbedExtractor) Extract(doc document.Document) (interface{}, error) {
 		decoder := json.NewDecoder(response.Body)
 		err = decoder.Decode(&res)
 		if err != nil {
-			return nil, err
+			return nil, "", err
 		}
 	} else {
 		decoder := xml.NewDecoder(response.Body)
 		err = decoder.Decode(&res)
 		if err != nil {
-			return nil, err
+			return nil, "", err
 		}
 	}
 
@@ -96,8 +140,7 @@ func (e *OEmbedExtractor) Extract(doc document.Document) (interface{}, error) {
 		}
 	}
 
-	// return res, res["type"].(string), err
-	return res, nil
+	return res, res["type"].(string), nil
 }
 
 func init() {
