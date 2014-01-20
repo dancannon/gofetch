@@ -3,10 +3,11 @@ package text
 import (
 	"github.com/dancannon/gofetch/document"
 	. "github.com/dancannon/gofetch/plugins"
+	"github.com/davecgh/go-spew/spew"
 
-	"code.google.com/p/go.net/html"
 	"regexp"
 	"strings"
+	"code.google.com/p/go.net/html"
 )
 
 type ContentType int
@@ -99,7 +100,7 @@ func (e *TextExtractor) Extract(doc document.Document) (interface{}, error) {
 
 	content := ""
 	hasContent := false
-
+	spew.Dump(blocks)
 	for _, block := range blocks {
 		if block.Type == Tag_Start {
 			content += "<" + block.Tag + ">"
