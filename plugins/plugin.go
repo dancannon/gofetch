@@ -1,8 +1,6 @@
 package plugins
 
-import (
-	"github.com/dancannon/gofetch/document"
-)
+import "github.com/dancannon/gofetch/document"
 
 var (
 	plugins = make(map[string]Plugin)
@@ -13,7 +11,7 @@ type Plugin interface {
 }
 
 type Supported interface {
-	Supports(doc document.Document) (bool, error)
+	Supports(doc document.Document) bool
 }
 
 type Extractor interface {
@@ -25,7 +23,7 @@ type Extractor interface {
 type MultiExtractor interface {
 	Plugin
 
-	ExtractValues(doc document.Document) (interface{}, string, error)
+	ExtractValues(doc document.Document) (values interface{}, pagetype string, err error)
 }
 
 func RegisterPlugin(name string, plugin Plugin) {

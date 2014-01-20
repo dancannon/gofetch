@@ -1,11 +1,12 @@
 package gofetch
 
 import (
+	neturl "net/url"
 	"github.com/dancannon/gofetch/config"
 	"github.com/dancannon/gofetch/document"
-	. "github.com/dancannon/gofetch/plugins"
-	neturl "net/url"
 
+	. "github.com/dancannon/gofetch/plugins"
+	_ "github.com/dancannon/gofetch/plugins/base"
 	_ "github.com/dancannon/gofetch/plugins/javascript"
 	_ "github.com/dancannon/gofetch/plugins/oembed"
 	_ "github.com/dancannon/gofetch/plugins/opengraph"
@@ -107,36 +108,59 @@ func (f *Fetcher) parseDocument(doc *document.Document) (Result, error) {
 
 	// Iterate through all registered rules and find one that can be used
 	for _, rule := range f.Config.Rules {
-		var re *regexp.Regexp
-		// Clean host
-		re = regexp.MustCompile(".*?://")
-		host := re.ReplaceAllString(strings.TrimLeft(url.Host, "www."), "")
-		ruleHost := re.ReplaceAllString(strings.TrimLeft(rule.Host, "www."), "")
+		// If the URLPattern was set then first match against the URL
+		if rule.UrlPattern != "" {
+			var re *regexp.Regexp
 
-		// Check host
-		if host != ruleHost {
-			continue
-		}
+			// Check url against the url regular expression
+			re = regexp.MustCompile(rule.UrlPattern)
+			if !re.MatchString(url.String()) {
+				continue
+			}
+		} else {
 
-		// Check path against the path regular expression
-		re = regexp.MustCompile(rule.PathPattern)
-		if !re.MatchString(url.RequestURI()) {
-			continue
+			// Otherwise match against the host and path separately
+			var re *regexp.Regexp
+			// Clean host
+			re = regexp.MustCompile(".*?://")
+			host := re.ReplaceAllString(strings.TrimLeft(url.Host, "www."), "")
+			ruleHost := re.ReplaceAllString(strings.TrimLeft(rule.Host, "www."), "")
+
+			// Check host
+			if host != ruleHost {
+				continue
+			}
+
+			// Check path against the path regular expression
+			re = regexp.MustCompile(rule.PathPattern)
+			if !re.MatchString(url.RequestURI()) {
+				continue
+			}
 		}
 
 		// Set the base page type
 		res.PageType = rule.Type
 
-		value, typ, err := f.extractTopLevelValues(rule.Values, doc)
-		if err != nil {
+		// Extract a single value and type if the rule contains a MultiExtractor
+		if value, typ, err := f.extractValue(rule.Values, doc); err != nil {
 			return Result{}, err
-		}
-		if typ != "" {
-			res.PageType = typ
-		}
-		res.Content = value
+		} else {
+			if typ != "" {
+				res.PageType = typ
+			}
+			res.Content = value
 
-		return res, nil
+			return res, nil
+		}
+
+		// Otherwise fallback to the normal extraction method.
+		if value, err := f.extractValues(rule.Values, doc); err != nil {
+			return Result{}, err
+		} else {
+			res.Content = value
+
+			return res, nil
+		}
 	}
 
 	return res, nil
@@ -144,90 +168,141 @@ func (f *Fetcher) parseDocument(doc *document.Document) (Result, error) {
 
 // Check the first level of values for an extractor, if one is found then immediately
 // return the result of the extractor.
-func (f *Fetcher) extractTopLevelValues(values map[string]interface{}, doc *document.Document) (interface{}, string, error) {
-	for key, val := range values {
-		// If value is an extractor reference then run the extractor and merge
-		// the result. Extractors start with a '@'
-		if strings.Index(key, "@") == 0 || strings.Index(key, "_") == 0 {
-			// Ensure that the extractor config is in the right format
-			ec, ok := val.(map[string]interface{})
-			if !ok {
-				return nil, "", fmt.Errorf("The extractor configuration is invalid")
-			}
+func (f *Fetcher) extractValue(values []interface{}, doc *document.Document) (value interface{}, pageType string, err error) {
+	for _, val := range values {
+		var props map[string]interface{}
 
-			id, ok := ec["id"].(string)
-			if !ok {
-				return nil, "", fmt.Errorf("The extractor configuration is invalid")
-			}
-			params, ok := ec["params"].(map[string]interface{})
-			if !ok {
-				params = make(map[string]interface{})
-			}
+		if _, ok := val.(map[string]interface{}); !ok {
+			return nil, "", fmt.Errorf("The value configuration is invalid")
+		}
+		props = val.(map[string]interface{})
 
-			if extractor := GetMultiExtractor(id); extractor != nil {
-				err := extractor.Setup(params)
-				if err != nil {
+		if typ, ok := props["type"]; ok {
+			switch typ {
+			case "extractor":
+				if v, t, supported, err := f.runExtractor(true, props, doc); err != nil {
 					return nil, "", err
+				} else if !supported {
+					continue
+				} else {
+					return v, t, nil
 				}
-
-				return extractor.ExtractValues(*doc)
-			} else {
-				break
 			}
 		}
 	}
 
-	value, err := f.extractValues(values, doc)
-	return value, "", err
+	value, err = f.extractValues(values, doc)
+	return
 }
 
-func (f *Fetcher) extractValues(values map[string]interface{}, doc *document.Document) (interface{}, error) {
+func (f *Fetcher) extractValues(values []interface{}, doc *document.Document) (interface{}, error) {
 	m := map[string]interface{}{}
 
-	for key, val := range values {
-		// If value is an extractor reference then run the extractor and merge
-		// the result. Extractors start with a '@'
-		if strings.Index(key, "@") == 0 || strings.Index(key, "_") == 0 {
-			// Ensure that the extractor config is in the right format
-			ec, ok := val.(map[string]interface{})
-			if !ok {
-				return nil, fmt.Errorf("The extractor configuration is invalid")
-			}
+	for _, val := range values {
+		var name string
+		var props map[string]interface{}
 
-			id, ok := ec["id"].(string)
-			if !ok {
-				return nil, fmt.Errorf("The extractor configuration is invalid")
-			}
-			params, ok := ec["params"].(map[string]interface{})
-			if !ok {
-				params = make(map[string]interface{})
-			}
+		if _, ok := val.(map[string]interface{}); !ok {
+			return nil, fmt.Errorf("The value configuration is invalid")
+		}
+		props = val.(map[string]interface{})
 
-			if extractor := GetExtractor(id); extractor != nil {
-				err := extractor.Setup(params)
-				if err != nil {
-					return nil, err
-				}
-
-				return extractor.Extract(*doc)
-			} else {
-				return nil, fmt.Errorf("Extractor %s not found", id)
-			}
+		if val, ok := props["name"].(string); !ok {
+			continue
 		} else {
-			switch val := val.(type) {
-			case map[string]interface{}:
-				v, err := f.extractValues(val, doc)
+			name = val
+		}
+
+		if typ, ok := props["type"]; ok {
+			switch typ {
+			case "extractor":
+				if v, _, supported, err := f.runExtractor(false, props, doc); err != nil {
+					return nil, err
+				} else if !supported {
+					continue
+				} else {
+					m[name] = v
+				}
+			case "value":
+				if _, ok := props["value"]; !ok {
+					continue
+				}
+
+				m[name] = props["value"]
+			case "values":
+				if _, ok := props["value"].([]interface{}); !ok {
+					continue
+				}
+
+				v, err := f.extractValues(props["value"].([]interface{}), doc)
 				if err != nil {
 					return nil, err
 				}
-				m[key] = v
-			default:
-				m[key] = val
+				m[name] = v
 			}
 		}
 	}
 
 	return m, nil
+}
+
+func (f *Fetcher) runExtractor(multi bool, props map[string]interface{}, doc *document.Document) (value interface{}, pageType string, supported bool, err error) {
+	id, ok := props["id"].(string)
+	if !ok {
+		return nil, "", false, fmt.Errorf("The extractor configuration is invalid")
+	}
+	params, ok := props["params"].(map[string]interface{})
+	if !ok {
+		params = make(map[string]interface{})
+	}
+
+	if multi {
+		if extractor := GetMultiExtractor(id); extractor != nil {
+			// Check if the extractor is able to extract from the document
+			if extractor, ok := extractor.(Supported); ok {
+				if !extractor.Supports(*doc) {
+					return nil, "", false, nil
+				}
+			}
+
+			err := extractor.Setup(params)
+			if err != nil {
+				return nil, "", false, err
+			}
+
+			v, t, err := extractor.ExtractValues(*doc)
+			if err != nil {
+				return nil, "", false, err
+			}
+
+			return v, t, true, nil
+		} else {
+			return nil, "", false, nil
+		}
+	} else {
+		if extractor := GetExtractor(id); extractor != nil {
+			// Check if the extractor is able to extract from the document
+			if extractor, ok := extractor.(Supported); ok {
+				if !extractor.Supports(*doc) {
+					return nil, "", false, nil
+				}
+			}
+
+			err := extractor.Setup(params)
+			if err != nil {
+				return nil, "", false, err
+			}
+
+			v, err := extractor.Extract(*doc)
+			if err != nil {
+				return nil, "", false, err
+			}
+
+			return v, "", true, nil
+		} else {
+			return nil, "", false, fmt.Errorf("Extractor %s not found", id)
+		}
+	}
 }
 
 func (f *Fetcher) validateResult(r Result) error {

@@ -1,11 +1,12 @@
 package gofetch
 
 import (
-	"code.google.com/p/go.net/html"
-	"github.com/dancannon/gofetch/document"
 	"net/url"
 	"regexp"
 	"strings"
+
+	"code.google.com/p/go.net/html"
+	"github.com/dancannon/gofetch/document"
 )
 
 var (

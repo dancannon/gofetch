@@ -35,7 +35,7 @@ func (e *OEmbedExtractor) Setup(config interface{}) error {
 	return nil
 }
 
-func (e *OEmbedExtractor) Supports(doc document.Document) (bool, error) {
+func (e *OEmbedExtractor) Supports(doc document.Document) bool {
 	// Look for an oembed like tag
 	var findTag func(*html.Node) bool
 	findTag = func(n *html.Node) bool {
@@ -75,7 +75,7 @@ func (e *OEmbedExtractor) Supports(doc document.Document) (bool, error) {
 		return false
 	}
 
-	return findTag(doc.Doc.Node()), nil
+	return findTag(doc.Doc.Node())
 }
 
 func (e *OEmbedExtractor) ExtractValues(doc document.Document) (interface{}, string, error) {

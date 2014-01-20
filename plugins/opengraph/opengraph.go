@@ -14,19 +14,19 @@ func (e *OpengraphExtractor) Setup(_ interface{}) error {
 	return nil
 }
 
-func (e *OpengraphExtractor) Supports(doc document.Document) (bool, error) {
+func (e *OpengraphExtractor) Supports(doc document.Document) bool {
 	// Look for a property starting with the string "og:"
 	for _, meta := range doc.Meta {
 		for key, val := range meta {
-			if key == "property" {
+			if key == "property" || key == "name" {
 				if strings.HasPrefix(val, "og:") {
-					return true, nil
+					return true
 				}
 			}
 		}
 	}
 
-	return false, nil
+	return false
 }
 
 func (e *OpengraphExtractor) ExtractValues(doc document.Document) (interface{}, string, error) {
@@ -37,7 +37,7 @@ func (e *OpengraphExtractor) ExtractValues(doc document.Document) (interface{}, 
 		var property, content string
 
 		for key, val := range meta {
-			if key == "property" {
+			if key == "property" || key == "name" {
 				property = val
 			} else if key == "content" {
 				content = val
@@ -50,33 +50,48 @@ func (e *OpengraphExtractor) ExtractValues(doc document.Document) (interface{}, 
 	}
 
 	var pagetype string
+	if _, ok := props["type"]; !ok {
+		return props, "unknown", nil
+	}
+
+	var values map[string]interface{}
 
 	// Not an official type but some sites use it (Flickr)
 	if strings.Contains(props["type"].(string), "image") {
 		pagetype = "image"
-		props = map[string]interface{}{
-			"title":  props["title"],
-			"url":    props["image"],
-			"width":  props["image:width"],
-			"height": props["image:height"],
-		}
+		values = createMapFromProps(props, map[string]string{
+			"title":  "title",
+			"url":    "image",
+			"width":  "image:width",
+			"height": "image:height",
+		})
 	} else if strings.Contains(props["type"].(string), "video") {
 		pagetype = "video"
-		props = map[string]interface{}{
-			"title":       props["title"],
-			"description": props["description"],
-		}
-	} else if strings.Contains(props["type"].(string), "article") {
-		pagetype = "text"
-		props = map[string]interface{}{
-			"title": props["title"],
-			"text":  props["description"],
-		}
+		values = createMapFromProps(props, map[string]string{
+			"title":       "title",
+			"description": "description",
+		})
 	} else {
-		pagetype = "unknown"
+		pagetype = "text"
+		values = createMapFromProps(props, map[string]string{
+			"title": "title",
+			"text":  "description",
+		})
 	}
 
-	return props, pagetype, nil
+	return values, pagetype, nil
+}
+
+func createMapFromProps(props map[string]interface{}, keys map[string]string) map[string]interface{} {
+	m := make(map[string]interface{})
+
+	for mapKey, propKey := range keys {
+		if val, ok := props[propKey]; ok {
+			m[mapKey] = val
+		}
+	}
+
+	return m
 }
 
 func init() {

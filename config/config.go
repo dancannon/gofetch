@@ -3,6 +3,7 @@ package config
 import (
 	"encoding/json"
 	"github.com/dancannon/gofetch/sandbox"
+	"github.com/davecgh/go-spew/spew"
 	"os"
 	"path/filepath"
 )
@@ -31,6 +32,7 @@ func LoadConfig(path string) Config {
 	decoder := json.NewDecoder(file)
 	err = decoder.Decode(&config)
 	if err != nil {
+		spew.Dump(err)
 		panic("Error decoding config file")
 	}
 
