@@ -3,6 +3,7 @@ package opengraph
 import (
 	"github.com/dancannon/gofetch/document"
 	. "github.com/dancannon/gofetch/plugins"
+	"github.com/davecgh/go-spew/spew"
 
 	"strings"
 )
@@ -65,19 +66,21 @@ func (e *OpengraphExtractor) ExtractValues(doc document.Document) (interface{}, 
 			"width":  "image:width",
 			"height": "image:height",
 		})
-	} else if strings.Contains(props["type"].(string), "video") {
-		pagetype = "video"
-		values = createMapFromProps(props, map[string]string{
-			"title":       "title",
-			"description": "description",
-		})
+		// } else if strings.Contains(props["type"].(string), "video") {
+		// 	pagetype = "video"
+		// 	values = createMapFromProps(props, map[string]string{
+		// 		"title":       "title",
+		// 		"description": "description",
+		// 	})
 	} else {
-		pagetype = "text"
+		pagetype = "general"
 		values = createMapFromProps(props, map[string]string{
 			"title": "title",
 			"text":  "description",
 		})
 	}
+
+	spew.Dump(values)
 
 	return values, pagetype, nil
 }
