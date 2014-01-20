@@ -2,8 +2,9 @@ package document
 
 import (
 	"bytes"
-	"code.google.com/p/go.net/html"
 	"io"
+
+	"code.google.com/p/go.net/html"
 )
 
 type HtmlNode html.Node
@@ -39,6 +40,8 @@ func NewDocument(url string, r io.Reader) *Document {
 		panic("Error parsing the html")
 	}
 
+	doc.Doc = (*HtmlNode)(&(*n))
+
 	// Process the document html to extract the title/meta tags
 	var processNode func(*html.Node)
 	var processTitleNode func(*html.Node)
@@ -57,7 +60,7 @@ func NewDocument(url string, r io.Reader) *Document {
 
 			doc.Meta = append(doc.Meta, attrs)
 		} else if n.Type == html.ElementNode && n.Data == "body" {
-			doc.Doc = (*HtmlNode)(n)
+			doc.Body = (*HtmlNode)(n)
 		}
 
 		for c := n.FirstChild; c != nil; c = c.NextSibling {

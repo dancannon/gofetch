@@ -184,33 +184,8 @@
 			"type": "extractor",
 			"id": "selector_text",
 			"params": {
-				"selector": ".story-body"
+				"selector": ".introduction"
 			}
-		}]
-	}, {
-		"id": "youtube",
-		"priority": 5,
-		"type": "unknown",
-		"host": "youtube.com",
-		"path_pattern": "/watch?.*",
-		"values": [{
-			"type": "extractor",
-			"value": "opengraph"
-		}]
-	}, {
-		"id": "flickr",
-		"priority": 5,
-		"type": "unknown",
-		"host": "flickr.com",
-		"path_pattern": "/photos/.*",
-		"values": [{
-			"name": "title",
-			"type": "value",
-			"value": "Title"
-		}, {
-			"name": "content",
-			"type": "value",
-			"value": "Picture"
 		}]
 	}]
 }

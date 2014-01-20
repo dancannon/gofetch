@@ -19,7 +19,11 @@ type BaseExtractor struct {
 }
 
 func (e *BaseExtractor) Setup(config interface{}) error {
-	e.params = config.(map[string]interface{})
+	if p, ok := config.(map[string]interface{}); !ok {
+		e.params = make(map[string]interface{})
+	} else {
+		e.params = p
+	}
 
 	return nil
 }

@@ -14,18 +14,26 @@ import (
 )
 
 type OEmbedExtractor struct {
-	endpoint string
-	format   string
+	endpoint       string
+	endpointFormat string
+	format         string
 }
 
 func (e *OEmbedExtractor) Setup(config interface{}) error {
-	params := config.(map[string]interface{})
+	var params map[string]interface{}
+	if p, ok := config.(map[string]interface{}); !ok {
+		params = make(map[string]interface{})
+	} else {
+		params = p
+	}
 
 	// Validate config
-	if endpoint, ok := params["endpoint"]; !ok {
-		return errors.New(fmt.Sprintf("The oembed extractor must be passed an endpoint"))
-	} else {
-		e.endpoint = endpoint.(string)
+	if e.endpoint == "" {
+		if endpointFormat, ok := params["endpoint"]; !ok {
+			return errors.New(fmt.Sprintf("The oembed extractor must be passed an endpoint"))
+		} else {
+			e.endpointFormat = endpointFormat.(string)
+		}
 	}
 
 	if format, ok := params["format"]; ok {
@@ -37,10 +45,10 @@ func (e *OEmbedExtractor) Setup(config interface{}) error {
 
 func (e *OEmbedExtractor) Supports(doc document.Document) bool {
 	// Look for an oembed like tag
-	var findTag func(*html.Node) bool
-	findTag = func(n *html.Node) bool {
+	var findOEmbedTag func(*html.Node) bool
+	findOEmbedTag = func(n *html.Node) bool {
 		if n.Type == html.ElementNode {
-			if n.Data == "like" {
+			if n.Data == "link" {
 				// Load values
 				var typ, href string
 				for _, attr := range n.Attr {
@@ -49,25 +57,25 @@ func (e *OEmbedExtractor) Supports(doc document.Document) bool {
 					} else if attr.Key == "href" {
 						href = attr.Val
 					}
+				}
 
-					// Check if type is a valid oembed discovery type
-					if typ == "application/json+oembed" {
-						e.format = "json"
-						e.endpoint = href
+				// Check if type is a valid oembed discovery type
+				if typ == "application/json+oembed" {
+					e.format = "json"
+					e.endpoint = href
 
-						return true
-					} else if typ == "text/xml+oembed" {
-						e.format = "xml"
-						e.endpoint = href
+					return true
+				} else if typ == "text/xml+oembed" {
+					e.format = "xml"
+					e.endpoint = href
 
-						return true
-					}
+					return true
 				}
 			}
 		}
 
 		for c := n.FirstChild; c != nil; c = c.NextSibling {
-			if findTag(c) {
+			if findOEmbedTag(c) {
 				return true
 			}
 		}
@@ -75,13 +83,29 @@ func (e *OEmbedExtractor) Supports(doc document.Document) bool {
 		return false
 	}
 
-	return findTag(doc.Doc.Node())
+	return findOEmbedTag(doc.Doc.Node())
 }
 
 func (e *OEmbedExtractor) ExtractValues(doc document.Document) (interface{}, string, error) {
-	url := fmt.Sprintf(e.endpoint, url.QueryEscape(doc.Url))
+	var endpoint string
+	if e.endpoint != "" {
+		endpoint = e.endpoint
+	} else {
+		endpoint = fmt.Sprintf(e.endpoint, url.QueryEscape(doc.Url))
+	}
 
-	response, err := http.Get(url)
+	// Resolve absolute endpoint url
+	hu, err := url.Parse(doc.Url)
+	if err != nil {
+		return nil, "", err
+	}
+	eu, err := url.Parse(endpoint)
+	if err != nil {
+		return nil, "", err
+	}
+	endpoint = hu.ResolveReference(eu).String()
+
+	response, err := http.Get(endpoint)
 	if err != nil {
 		return nil, "", err
 	}
@@ -89,58 +113,65 @@ func (e *OEmbedExtractor) ExtractValues(doc document.Document) (interface{}, str
 	defer response.Body.Close()
 
 	// Decode result
-	var res map[string]interface{}
+	var resp map[string]interface{}
 
 	if e.format == "json" || e.format == "" {
 		decoder := json.NewDecoder(response.Body)
-		err = decoder.Decode(&res)
+		err = decoder.Decode(&resp)
 		if err != nil {
 			return nil, "", err
 		}
 	} else {
 		decoder := xml.NewDecoder(response.Body)
-		err = decoder.Decode(&res)
+		err = decoder.Decode(&resp)
 		if err != nil {
 			return nil, "", err
 		}
 	}
 
-	switch res["type"] {
+	var resptype string
+	if t, ok := resp["type"].(string); ok {
+		resptype = t
+	} else {
+		resptype = "unknown"
+	}
+
+	switch resptype {
 	case "photo":
-		res = map[string]interface{}{
-			"title": res["title"],
+		resp = map[string]interface{}{
+			"title": resp["title"],
 			"author": map[string]interface{}{
-				"name": res["author_name"],
-				"url":  res["author_url"],
+				"name": resp["author_name"],
+				"url":  resp["author_url"],
 			},
 			"thumbnail": map[string]interface{}{
-				"url":    res["thumbnail_url"],
-				"width":  res["thumbnail_width"],
-				"height": res["thumbnail_height"],
+				"url":    resp["thumbnail_url"],
+				"width":  resp["thumbnail_width"],
+				"height": resp["thumbnail_height"],
 			},
-			"url":    res["url"],
-			"width":  res["width"],
-			"height": res["height"],
+			"url":    resp["url"],
+			"width":  resp["width"],
+			"height": resp["height"],
 		}
 	case "video":
-		res = map[string]interface{}{
-			"title": res["title"],
+		resp = map[string]interface{}{
+			"title": resp["title"],
 			"author": map[string]interface{}{
-				"name": res["author_name"],
-				"url":  res["author_url"],
+				"name": resp["author_name"],
+				"url":  resp["author_url"],
 			},
 			"thumbnail": map[string]interface{}{
-				"url":    res["thumbnail_url"],
-				"width":  res["thumbnail_width"],
-				"height": res["thumbnail_height"],
+				"url":    resp["thumbnail_url"],
+				"width":  resp["thumbnail_width"],
+				"height": resp["thumbnail_height"],
 			},
-			"html":   res["html"],
-			"width":  res["width"],
-			"height": res["height"],
+			"html":   resp["html"],
+			"width":  resp["width"],
+			"height": resp["height"],
 		}
 	}
 
-	return res, res["type"].(string), nil
+	return resp, resptype, nil
 }
 
 func init() {

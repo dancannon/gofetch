@@ -15,7 +15,12 @@ type UrlMapperExtractor struct {
 }
 
 func (e *UrlMapperExtractor) Setup(config interface{}) error {
-	params := config.(map[string]interface{})
+	var params map[string]interface{}
+	if p, ok := config.(map[string]interface{}); !ok {
+		params = make(map[string]interface{})
+	} else {
+		params = p
+	}
 
 	// Validate config
 	if pattern, ok := params["pattern"]; !ok {

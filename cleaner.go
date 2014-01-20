@@ -15,45 +15,41 @@ var (
 )
 
 func cleanDocument(d *document.Document) {
-	cleanNode(d.Doc.Node(), d)
+	cleanNode(d.Body.Node(), d)
 }
 
 func cleanNode(n *html.Node, d *document.Document) {
 	if n.Type == html.ElementNode {
 		// Ensure that the body tag is added to the result document
-		if n.Data == "body" {
-			d.Body = (*document.HtmlNode)(n)
-		} else {
-			tmpAttrs := []html.Attribute{}
-			for _, a := range n.Attr {
-				if a.Key == "id" || a.Key == "class" || a.Key == "name" {
-					if ignorableRegex.MatchString(strings.ToLower(a.Val)) {
-						n.Parent.RemoveChild(n)
-						return
-					}
-				} else if a.Key == "href" || a.Key == "src" {
-					// Attempt to fix URLs
-					urlb, err := url.Parse(d.Url)
-					if err != nil {
-						continue
-					}
-					urlr, err := url.Parse(a.Val)
-					if err != nil {
-						continue
-					}
-					a.Val = urlb.ResolveReference(urlr).String()
+		tmpAttrs := []html.Attribute{}
+		for _, a := range n.Attr {
+			if a.Key == "id" || a.Key == "class" || a.Key == "name" {
+				if ignorableRegex.MatchString(strings.ToLower(a.Val)) {
+					n.Parent.RemoveChild(n)
+					return
 				}
-
-				tmpAttrs = append(tmpAttrs, a)
+			} else if a.Key == "href" || a.Key == "src" {
+				// Attempt to fix URLs
+				urlb, err := url.Parse(d.Url)
+				if err != nil {
+					continue
+				}
+				urlr, err := url.Parse(a.Val)
+				if err != nil {
+					continue
+				}
+				a.Val = urlb.ResolveReference(urlr).String()
 			}
-			n.Attr = tmpAttrs
 
-			switch n.Data {
-			// Remove un-needed tags
-			case "script", "style", "link", "noscript":
-				n.Parent.RemoveChild(n)
-				return
-			}
+			tmpAttrs = append(tmpAttrs, a)
+		}
+		n.Attr = tmpAttrs
+
+		switch n.Data {
+		// Remove un-needed tags
+		case "script", "style", "link", "noscript":
+			n.Parent.RemoveChild(n)
+			return
 		}
 	} else if n.Type == html.CommentNode {
 		n.Parent.RemoveChild(n)

@@ -15,7 +15,12 @@ type SelectorExtractor struct {
 }
 
 func (e *SelectorExtractor) Setup(config interface{}) error {
-	params := config.(map[string]interface{})
+	var params map[string]interface{}
+	if p, ok := config.(map[string]interface{}); !ok {
+		params = make(map[string]interface{})
+	} else {
+		params = p
+	}
 
 	// Validate config
 	if selector, ok := params["selector"]; !ok {

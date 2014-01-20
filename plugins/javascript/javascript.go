@@ -15,7 +15,12 @@ type JavaScriptExtractor struct {
 }
 
 func (e *JavaScriptExtractor) Setup(config interface{}) error {
-	params := config.(map[string]interface{})
+	var params map[string]interface{}
+	if p, ok := config.(map[string]interface{}); !ok {
+		params = make(map[string]interface{})
+	} else {
+		params = p
+	}
 
 	e.sb = nil
 	e.sbc = new(SandboxConfig)
