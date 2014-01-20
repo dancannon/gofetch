@@ -6,7 +6,7 @@
 	}],
 	"types": [{
 		"id": "unknown",
-		"validate": false,
+		"allow_extra": false,
 		"values": {}
 	}, {
 		"id": "general",
@@ -182,7 +182,7 @@
 		}, {
 			"name": "text",
 			"type": "extractor",
-			"id": "selector_text",
+			"id": "text",
 			"params": {
 				"selector": ".introduction"
 			}

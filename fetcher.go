@@ -309,18 +309,14 @@ func (f *Fetcher) validateResult(r Result) error {
 	// Check that the result uses a known type
 	for _, t := range f.Config.Types {
 		if t.Id == r.PageType {
-			if !t.Validate {
-				return nil
-			}
-
-			return validateResultValues(t.Id, r.Content, t.Values)
+			return validateResultValues(t.Id, r.Content, t.Values, t.AllowExtra)
 		}
 	}
 
 	return fmt.Errorf("The page type %s does not exist", r.PageType)
 }
 
-func validateResultValues(pagetype string, values interface{}, typValues interface{}) error {
+func validateResultValues(pagetype string, values interface{}, typValues interface{}, allowExtra bool) error {
 	// Check that both values have the same type
 	if reflect.TypeOf(values) != reflect.TypeOf(typValues) {
 		return fmt.Errorf("The result is not of the correct type")
@@ -351,7 +347,7 @@ func validateResultValues(pagetype string, values interface{}, typValues interfa
 
 				// Validate any children nodes if they exist
 				if childTypValues, ok := v["values"]; ok {
-					err := validateResultValues(pagetype, valuesM[k], childTypValues)
+					err := validateResultValues(pagetype, valuesM[k], childTypValues, allowExtra)
 					if err != nil {
 						return err
 					}
@@ -362,17 +358,19 @@ func validateResultValues(pagetype string, values interface{}, typValues interfa
 		}
 
 		// Check that the result value doesnt have any extra nodes
-		for k, _ := range valuesM {
-			seen := false
+		if !allowExtra {
+			for k, _ := range valuesM {
+				seen := false
 
-			for _, sk := range seenNodes {
-				if !seen && k == sk {
-					seen = true
+				for _, sk := range seenNodes {
+					if !seen && k == sk {
+						seen = true
+					}
 				}
-			}
 
-			if !seen {
-				return fmt.Errorf("The type %s does not contain the field %s", pagetype, k)
+				if !seen {
+					return fmt.Errorf("The type %s does not contain the field %s", pagetype, k)
+				}
 			}
 		}
 	// If the value was not a map then the value does not validate

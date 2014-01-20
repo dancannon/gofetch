@@ -3,7 +3,6 @@ package text
 import (
 	"github.com/dancannon/gofetch/document"
 	. "github.com/dancannon/gofetch/plugins"
-	"github.com/davecgh/go-spew/spew"
 
 	"regexp"
 	"strings"
@@ -100,7 +99,6 @@ func (e *TextExtractor) Extract(doc document.Document) (interface{}, error) {
 
 	content := ""
 	hasContent := false
-	spew.Dump(blocks)
 	for _, block := range blocks {
 		if block.Type == Tag_Start {
 			content += "<" + block.Tag + ">"
@@ -144,7 +142,7 @@ func (e *TextExtractor) parseDocument(d document.Document) []TextBlock {
 
 				currentBlock = TextBlock{}
 				currentBlock.Tag = n.Data
-				currentBlock.Type = Tag_End
+				currentBlock.Type = Tag_Start
 				currentBlock.Flush()
 				blocks = append(blocks, currentBlock)
 
