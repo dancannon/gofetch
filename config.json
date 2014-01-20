@@ -212,15 +212,5 @@
 			"type": "value",
 			"value": "Picture"
 		}]
-	}, {
-		"id": "stackoverflow",
-		"priority": 5,
-		"type": "unknown",
-		"host": "stackoverflow.com",
-		"path_pattern": "/questions/.*",
-		"values": [{
-			"type": "extractor",
-			"id": "opengraph"
-		}]
 	}]
 }
