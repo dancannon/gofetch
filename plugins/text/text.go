@@ -3,10 +3,10 @@ package text
 import (
 	"github.com/dancannon/gofetch/document"
 	. "github.com/dancannon/gofetch/plugins"
+	"os"
 
-	"regexp"
-	"strings"
 	"code.google.com/p/go.net/html"
+	"regexp"
 )
 
 type ContentType int
@@ -18,78 +18,24 @@ const (
 	Title
 	Tag_Start
 	Tag_End
+	Tag
 	NotContent
 )
 
-type TextBlock struct {
-	Type ContentType
-	Text string
-	Tag  string
-
-	NumChars        int
-	NumWords        int
-	NumLinkedWords  int
-	NumWrappedWords int
-	NumLines        int
-
-	TextDensity float64
-	LinkDensity float64
-}
-
-func (b *TextBlock) AddText(text string, inLink bool) {
-	words := strings.Fields(text)
-
-	// Increment counts
-	b.NumWords += len(words)
-	b.NumChars += len(text)
-	if inLink {
-		b.NumLinkedWords += len(words)
-	}
-
-	b.Text = b.Text + text
-}
-
-func (b *TextBlock) Flush() {
-	// Count the number of lines
-	words := strings.Fields(b.Text)
-	currLineChars := 0
-	currLineWords := 0
-
-	b.NumLines = 0
-	b.NumWrappedWords = 0
-
-	for _, word := range words {
-		currLineChars += len(word)
-		currLineWords += 1
-
-		if currLineChars > lineLength {
-			b.NumLines++
-			b.NumWrappedWords = 0
-
-			currLineChars = 0
-			currLineWords = 0
-		}
-	}
-
-	if b.NumLines == 0 {
-		b.NumWrappedWords = b.NumWords
-		b.NumLines = 1
-	} else {
-		b.NumWrappedWords = b.NumWords - currLineWords
-	}
-
-	b.TextDensity = float64(b.NumWrappedWords) / float64(b.NumLines)
-	if b.NumWords == 0 {
-		b.LinkDensity = 0
-	} else {
-		b.LinkDensity = float64(b.NumLinkedWords) / float64(b.NumWords)
-	}
-}
-
 type TextExtractor struct {
+	format string
 }
 
-func (e *TextExtractor) Setup(_ interface{}) error {
+func (e *TextExtractor) Setup(config interface{}) error {
+	params := config.(map[string]interface{})
+
+	// Validate config
+	if format, ok := params["format"]; !ok {
+		e.format = "raw"
+	} else {
+		e.format = format.(string)
+	}
+
 	return nil
 }
 
@@ -99,14 +45,26 @@ func (e *TextExtractor) Extract(doc document.Document) (interface{}, error) {
 
 	content := ""
 	hasContent := false
-	for _, block := range blocks {
-		if block.Type == Tag_Start {
-			content += "<" + block.Tag + ">"
-		} else if block.Type == Tag_End {
-			content += "</" + block.Tag + ">"
-		} else if block.Type == Content {
-			hasContent = true
-			content += "<" + block.Tag + ">" + block.Text + "</" + block.Tag + ">"
+	switch e.format {
+	case "simple":
+		for _, block := range blocks {
+			if block.Type == Content {
+				hasContent = true
+				content += block.Text + "<br />"
+			}
+		}
+	case "html":
+		fallthrough
+	default:
+		for _, block := range blocks {
+			if block.Type == Tag_Start {
+				content += "<" + block.Tag + ">"
+			} else if block.Type == Tag_End {
+				content += "</" + block.Tag + ">"
+			} else if block.Type == Content {
+				hasContent = true
+				content += "<" + block.Tag + ">" + block.Text + "</" + block.Tag + ">"
+			}
 		}
 	}
 
@@ -118,6 +76,9 @@ func (e *TextExtractor) Extract(doc document.Document) (interface{}, error) {
 }
 
 func (e *TextExtractor) parseDocument(d document.Document) []TextBlock {
+	w, _ := os.Create("test.html")
+	html.Render(w, d.Body.Node())
+
 	blocks := []TextBlock{}
 	currentBlock := TextBlock{}
 	flush := false

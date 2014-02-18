@@ -1,9 +1,9 @@
 package gofetch
 
 import (
-	neturl "net/url"
 	"github.com/dancannon/gofetch/config"
 	"github.com/dancannon/gofetch/document"
+	neturl "net/url"
 
 	. "github.com/dancannon/gofetch/plugins"
 	_ "github.com/dancannon/gofetch/plugins/base"
