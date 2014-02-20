@@ -75,7 +75,7 @@ func (e *BaseExtractor) getExtractorParams(id string) interface{} {
 		return v
 	}
 
-	return nil
+	return map[string]interface{}{}
 }
 
 func init() {

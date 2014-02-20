@@ -44,8 +44,7 @@ func (f *Fetcher) Fetch(url string) (Result, error) {
 	if err != nil {
 		return Result{}, err
 	}
-
-	doc := document.NewDocument(response.Request.URL.String(), response.Body)
+	defer response.Body.Close()
 
 	var result Result
 
@@ -54,6 +53,11 @@ func (f *Fetcher) Fetch(url string) (Result, error) {
 		// If the page was HTML then parse the HTMl otherwise return the plain
 		// text
 		if isContentTypeHtml(response) {
+			doc, err := document.NewDocument(response.Request.URL.String(), response.Body)
+			if err != nil {
+				return Result{}, err
+			}
+
 			result, err = f.parseDocument(doc)
 			if err != nil {
 				return Result{}, err
@@ -68,8 +72,10 @@ func (f *Fetcher) Fetch(url string) (Result, error) {
 				Url:      response.Request.URL.String(),
 				PageType: "text",
 				Content: map[string]interface{}{
-					"text": text,
+					"title": "",
+					"text":  string(text),
 				},
+				Response: *response,
 			}
 		}
 	} else {
@@ -77,8 +83,13 @@ func (f *Fetcher) Fetch(url string) (Result, error) {
 		// Content-Type header
 		result = Result{
 			Url:      response.Request.URL.String(),
-			PageType: response.Header.Get("Content-Type"),
+			PageType: "raw",
+			Content: map[string]interface{}{
+				"mime_type": response.Header.Get("Content-Type"),
+			},
+			Response: *response,
 		}
+
 	}
 
 	// Validate the result
@@ -148,15 +159,6 @@ func (f *Fetcher) parseDocument(doc *document.Document) (Result, error) {
 			if typ != "" {
 				res.PageType = typ
 			}
-			res.Content = value
-
-			return res, nil
-		}
-
-		// Otherwise fallback to the normal extraction method.
-		if value, err := f.extractValues(rule.Values, doc); err != nil {
-			return Result{}, err
-		} else {
 			res.Content = value
 
 			return res, nil
@@ -337,6 +339,7 @@ func validateResultValues(pagetype string, values interface{}, typValues interfa
 				// Check that the value has the node if it is required
 				if required, ok := v["required"].(bool); ok && required {
 					if _, ok := valuesM[k]; !ok {
+
 						return fmt.Errorf("The type %s requires the field %s", pagetype, k)
 					}
 				}
@@ -373,9 +376,6 @@ func validateResultValues(pagetype string, values interface{}, typValues interfa
 				}
 			}
 		}
-	// If the value was not a map then the value does not validate
-	default:
-		return fmt.Errorf("The result is not of the correct type")
 	}
 
 	return nil

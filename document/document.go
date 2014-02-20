@@ -1,24 +1,10 @@
 package document
 
 import (
-	"bytes"
 	"io"
 
 	"code.google.com/p/go.net/html"
 )
-
-type HtmlNode html.Node
-
-func (n *HtmlNode) MarshalJSON() ([]byte, error) {
-	w := bytes.Buffer{}
-	err := html.Render(&w, n.Node())
-
-	return w.Bytes(), err
-}
-
-func (n *HtmlNode) Node() *html.Node {
-	return (*html.Node)(n)
-}
 
 type Document struct {
 	Url   string              `json:"url"`
@@ -28,7 +14,7 @@ type Document struct {
 	Body  *HtmlNode           `json:"body"`
 }
 
-func NewDocument(url string, r io.Reader) *Document {
+func NewDocument(url string, r io.Reader) (*Document, error) {
 	doc := &Document{
 		Url:  url,
 		Meta: []map[string]string{},
@@ -37,7 +23,7 @@ func NewDocument(url string, r io.Reader) *Document {
 	// Parse the html
 	n, err := html.Parse(r)
 	if err != nil {
-		panic("Error parsing the html")
+		return nil, err
 	}
 
 	doc.Doc = (*HtmlNode)(&(*n))
@@ -79,5 +65,5 @@ func NewDocument(url string, r io.Reader) *Document {
 	}
 	processNode(n)
 
-	return doc
+	return doc, nil
 }

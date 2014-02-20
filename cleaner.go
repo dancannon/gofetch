@@ -65,6 +65,9 @@ func cleanNode(n *html.Node, d *document.Document) {
 }
 
 func deleteNode(n *html.Node) {
+	if n.Parent != nil {
+
+	}
 	if n.Parent.FirstChild == n {
 		n.FirstChild = n.NextSibling
 	}
@@ -74,7 +77,7 @@ func deleteNode(n *html.Node) {
 	if n.Parent.LastChild == n {
 		n.LastChild = n.PrevSibling
 	}
-	if n.Parent.PrevSibling != nil {
+	if n.PrevSibling != nil {
 		n.PrevSibling.NextSibling = n.NextSibling
 	}
 	n.Parent = nil

@@ -165,9 +165,7 @@ func (e *OEmbedExtractor) ExtractValues(doc document.Document) (interface{}, str
 				"width":  resp["thumbnail_width"],
 				"height": resp["thumbnail_height"],
 			},
-			"html":   resp["html"],
-			"width":  resp["width"],
-			"height": resp["height"],
+			"html": resp["html"],
 		}
 	}
 

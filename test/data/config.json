@@ -52,7 +52,7 @@
             }
         }
     }, {
-        "id": "image",
+        "id": "photo",
         "values": {
             "title": {
                 "required": true
