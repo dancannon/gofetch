@@ -76,9 +76,6 @@ func (e *TextExtractor) Extract(doc document.Document) (interface{}, error) {
 }
 
 func (e *TextExtractor) parseDocument(d document.Document) []TextBlock {
-	w, _ := os.Create("test.html")
-	html.Render(w, d.Body.Node())
-
 	blocks := []TextBlock{}
 	currentBlock := TextBlock{}
 	flush := false
