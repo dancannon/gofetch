@@ -1,0 +1,10 @@
+{
+    "version": "1.0",
+    "provider_name": "Provider",
+    "provider_url": "Provider Url",
+    "author_name": "Author",
+    "author_url": "Author Url",
+    "title": "Test",
+    "type": "link",
+    "html": "Content"
+}

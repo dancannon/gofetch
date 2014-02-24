@@ -1,4 +1,4 @@
-package oembed
+package javascript
 
 import (
 	"github.com/dancannon/gofetch/document"
@@ -11,7 +11,7 @@ import (
 
 type JavaScriptExtractor struct {
 	sb  Sandbox
-	sbc *SandboxConfig
+	sbc SandboxConfig
 }
 
 func (e *JavaScriptExtractor) Setup(config interface{}) error {
@@ -23,7 +23,7 @@ func (e *JavaScriptExtractor) Setup(config interface{}) error {
 	}
 
 	e.sb = nil
-	e.sbc = new(SandboxConfig)
+	e.sbc = SandboxConfig{}
 	if script, ok := params["script"]; !ok {
 		return fmt.Errorf("The javascript sandbox extractor must be passed an script")
 	} else {
@@ -31,15 +31,10 @@ func (e *JavaScriptExtractor) Setup(config interface{}) error {
 		e.sbc.ScriptType = "js"
 	}
 
-	switch e.sbc.ScriptType {
-	case "js":
-		var err error
-		e.sb, err = js.CreateJsSandbox(e.sbc)
-		if err != nil {
-			return err
-		}
-	default:
-		return fmt.Errorf("unsupported script type: %s", e.sbc.ScriptType)
+	var err error
+	e.sb, err = js.NewSandbox(e.sbc)
+	if err != nil {
+		return err
 	}
 
 	return e.sb.Init()
@@ -55,11 +50,9 @@ func (e *JavaScriptExtractor) Extract(doc document.Document) (interface{}, error
 		Document: doc,
 	}
 
-	retval := e.sb.ProcessMessage(msg)
-	if retval > 0 {
-		return nil, fmt.Errorf("FATAL: %s", e.sb.LastError())
-	} else if retval < 0 {
-		return nil, fmt.Errorf("Failed extracting value")
+	err := e.sb.ProcessMessage(msg)
+	if err != nil {
+		return nil, err
 	}
 
 	return msg.Value, nil
@@ -75,11 +68,9 @@ func (e *JavaScriptExtractor) ExtractValues(doc document.Document) (interface{},
 		Document: doc,
 	}
 
-	retval := e.sb.ProcessMessage(msg)
-	if retval > 0 {
-		return nil, "", fmt.Errorf("FATAL: %s", e.sb.LastError())
-	} else if retval < 0 {
-		return nil, "", fmt.Errorf("Failed extracting value")
+	err := e.sb.ProcessMessage(msg)
+	if err != nil {
+		return nil, "", err
 	}
 
 	return msg.Value, msg.PageType, nil

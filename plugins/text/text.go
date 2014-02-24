@@ -3,7 +3,6 @@ package text
 import (
 	"github.com/dancannon/gofetch/document"
 	. "github.com/dancannon/gofetch/plugins"
-	"os"
 
 	"code.google.com/p/go.net/html"
 	"regexp"

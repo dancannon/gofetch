@@ -39,24 +39,24 @@ var localTests = []struct {
 	expectedContent  interface{} // expected content
 }{
 	{
-		"test/data/plain_text.txt",
+		"test/plain_text.txt",
 		"text",
 		map[string]interface{}{"title": "", "text": "Lorem ipsum dolor sit amet, consectetur adipisicing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.\n"},
 	},
 	{
-		"test/data/image.gif",
+		"test/image.gif",
 		"raw",
 		map[string]interface{}{
 			"mime_type": "image/gif",
 		},
 	},
 	{
-		"test/data/simple.html",
+		"test/simple.html",
 		"text",
 		nil,
 	},
 	{
-		"test/data/blog.html",
+		"test/blog.html",
 		"text",
 		nil,
 	},
@@ -185,7 +185,7 @@ func TestFetchMockedServer(t *testing.T) {
 				Convey("and the HTTP server has been started", func() {
 					// Start a server that loads the content from the input file
 					ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-						f, err := os.Open("test/data/blog.html")
+						f, err := os.Open("test/blog.html")
 						if err != nil {
 							http.Error(w, err.Error(), http.StatusInternalServerError)
 						}
@@ -259,7 +259,7 @@ func TestFetchMockedServer(t *testing.T) {
 				Convey("and the HTTP server has been started", func() {
 					// Start a server that loads the content from the input file
 					ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-						f, err := os.Open("test/data/blog.html")
+						f, err := os.Open("test/blog.html")
 						if err != nil {
 							http.Error(w, err.Error(), http.StatusInternalServerError)
 						}

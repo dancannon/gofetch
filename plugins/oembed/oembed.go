@@ -2,11 +2,12 @@ package oembed
 
 import (
 	"code.google.com/p/go.net/html"
+	"github.com/clbanning/mxj"
 	"github.com/dancannon/gofetch/document"
 	. "github.com/dancannon/gofetch/plugins"
+	"github.com/dancannon/gofetch/util"
 
 	"encoding/json"
-	"encoding/xml"
 	"errors"
 	"fmt"
 	"net/http"
@@ -91,7 +92,7 @@ func (e *OEmbedExtractor) ExtractValues(doc document.Document) (interface{}, str
 	if e.endpoint != "" {
 		endpoint = e.endpoint
 	} else {
-		endpoint = fmt.Sprintf(e.endpoint, url.QueryEscape(doc.Url))
+		endpoint = fmt.Sprintf(e.endpointFormat, url.QueryEscape(doc.Url))
 	}
 
 	// Resolve absolute endpoint url
@@ -109,67 +110,91 @@ func (e *OEmbedExtractor) ExtractValues(doc document.Document) (interface{}, str
 	if err != nil {
 		return nil, "", err
 	}
-
 	defer response.Body.Close()
 
+	// Ensure that the endpoint was found
+	if response.StatusCode != 200 {
+		return nil, "", errors.New("There was an error fetching result from the OEmbed endpoint")
+	}
+
 	// Decode result
-	var resp map[string]interface{}
+	var props map[string]interface{}
 
 	if e.format == "json" || e.format == "" {
 		decoder := json.NewDecoder(response.Body)
-		err = decoder.Decode(&resp)
+		err = decoder.Decode(&props)
 		if err != nil {
 			return nil, "", err
 		}
 	} else {
-		decoder := xml.NewDecoder(response.Body)
-		err = decoder.Decode(&resp)
+		props, err = mxj.NewMapXmlReader(response.Body)
 		if err != nil {
 			return nil, "", err
 		}
+
+		if _, ok := props["oembed"]; !ok {
+			return nil, "", errors.New("OEmbed data in incorrect format")
+		}
+		if _, ok := props["oembed"].(map[string]interface{}); !ok {
+			return nil, "", errors.New("OEmbed data in incorrect format")
+		}
+
+		props = props["oembed"].(map[string]interface{})
 	}
 
 	var resptype string
-	if t, ok := resp["type"].(string); ok {
+	if t, ok := props["type"].(string); ok {
 		resptype = t
 	} else {
 		resptype = "unknown"
 	}
 
 	switch resptype {
-	case "photo":
-		resp = map[string]interface{}{
-			"title": resp["title"],
-			"author": map[string]interface{}{
-				"name": resp["author_name"],
-				"url":  resp["author_url"],
-			},
-			"thumbnail": map[string]interface{}{
-				"url":    resp["thumbnail_url"],
-				"width":  resp["thumbnail_width"],
-				"height": resp["thumbnail_height"],
-			},
-			"url":    resp["url"],
-			"width":  resp["width"],
-			"height": resp["height"],
+	case "photo", "image":
+		res := util.CreateMapFromProps(props, map[string]string{
+			"title":      "title",
+			"html":       "html",
+			"width:int":  "width",
+			"height:int": "height",
+		})
+		if _, ok := props["author_url"]; ok {
+			res["author"] = util.CreateMapFromProps(props, map[string]string{
+				"name": "author_name",
+				"url":  "author_url",
+			})
 		}
+		if _, ok := props["thumbnail_url"]; ok {
+			res["thumbnail"] = util.CreateMapFromProps(props, map[string]string{
+				"url":        "thumbnail_url",
+				"width:int":  "thumbnail_width",
+				"height:int": "thumbnail_height",
+			})
+		}
+
+		return res, "image", nil
 	case "video":
-		resp = map[string]interface{}{
-			"title": resp["title"],
-			"author": map[string]interface{}{
-				"name": resp["author_name"],
-				"url":  resp["author_url"],
-			},
-			"thumbnail": map[string]interface{}{
-				"url":    resp["thumbnail_url"],
-				"width":  resp["thumbnail_width"],
-				"height": resp["thumbnail_height"],
-			},
-			"html": resp["html"],
+		res := util.CreateMapFromProps(props, map[string]string{
+			"title": "title",
+			"html":  "html",
+		})
+		if _, ok := props["author_url"]; ok {
+			res["author"] = util.CreateMapFromProps(props, map[string]string{
+				"name": "author_name",
+				"url":  "author_url",
+			})
 		}
+		if _, ok := props["thumbnail_url"]; ok {
+			res["thumbnail"] = util.CreateMapFromProps(props, map[string]string{
+				"url":        "thumbnail_url",
+				"width:int":  "thumbnail_width",
+				"height:int": "thumbnail_height",
+			})
+		}
+
+		return res, "video", nil
 	}
 
-	return resp, resptype, nil
+	return props, "unknown", nil
 }
 
 func init() {

@@ -9,8 +9,10 @@ import (
 )
 
 func TestSetup(t *testing.T) {
+	var e *OpengraphExtractor
+
 	Convey("Subject: Setup OpenGraph extractor", t, func() {
-		e := &OpengraphExtractor{}
+		e = &OpengraphExtractor{}
 
 		Convey("When the extractor is setup", func() {
 			err := e.Setup(map[string]interface{}{})
@@ -23,17 +25,19 @@ func TestSetup(t *testing.T) {
 }
 
 func TestSupports(t *testing.T) {
+	var e *OpengraphExtractor
+
 	Convey("Subject: Check if page supports OpenGraph", t, func() {
-		e := &OpengraphExtractor{}
+		e = &OpengraphExtractor{}
 
 		Convey("Given a document that does not support OpenGraph", func() {
-			f, err := os.Open("../../test/data/simple.html")
+			f, err := os.Open("../../test/simple.html")
 			if err != nil {
-				panic(err.Error())
+				t.Fatal(err.Error())
 			}
 			doc, err := document.NewDocument("", f)
 			if err != nil {
-				panic(err.Error())
+				t.Fatal(err.Error())
 			}
 
 			Convey("The extractor will not support the document", func() {
@@ -41,13 +45,13 @@ func TestSupports(t *testing.T) {
 			})
 		})
 		Convey("Given a document that does support OpenGraph", func() {
-			f, err := os.Open("../../test/data/opengraph_text.html")
+			f, err := os.Open("../../test/opengraph_text.html")
 			if err != nil {
-				panic(err.Error())
+				t.Fatal(err.Error())
 			}
 			doc, err := document.NewDocument("", f)
 			if err != nil {
-				panic(err.Error())
+				t.Fatal(err.Error())
 			}
 
 			Convey("The extractor will support the document", func() {
@@ -55,28 +59,28 @@ func TestSupports(t *testing.T) {
 			})
 		})
 	})
-
 }
 
 func TestExtractValues(t *testing.T) {
-	Convey("Subject: Extract values from page", t, func() {
-		e := &OpengraphExtractor{}
+	var e *OpengraphExtractor
 
+	Convey("Subject: Extract values from page", t, func() {
 		Convey("When the extractor is setup", func() {
+			e = &OpengraphExtractor{}
 			err := e.Setup(map[string]interface{}{})
 			if err != nil {
-				panic(err.Error())
+				t.Fatal(err.Error())
 			}
 
 			Convey("And a page that supports opengraph is given", func() {
 				Convey("And that page is an article", func() {
-					f, err := os.Open("../../test/data/opengraph_text.html")
+					f, err := os.Open("../../test/opengraph_text.html")
 					if err != nil {
-						panic(err.Error())
+						t.Fatal(err.Error())
 					}
 					doc, err := document.NewDocument("", f)
 					if err != nil {
-						panic(err.Error())
+						t.Fatal(err.Error())
 					}
 
 					res, typ, err := e.ExtractValues(*doc)
@@ -93,13 +97,13 @@ func TestExtractValues(t *testing.T) {
 					})
 				})
 				Convey("And that page is a photo", func() {
-					f, err := os.Open("../../test/data/opengraph_photo.html")
+					f, err := os.Open("../../test/opengraph_photo.html")
 					if err != nil {
-						panic(err.Error())
+						t.Fatal(err.Error())
 					}
 					doc, err := document.NewDocument("", f)
 					if err != nil {
-						panic(err.Error())
+						t.Fatal(err.Error())
 					}
 
 					res, typ, err := e.ExtractValues(*doc)
@@ -119,13 +123,13 @@ func TestExtractValues(t *testing.T) {
 					})
 				})
 				Convey("And that page is an unrecognised type", func() {
-					f, err := os.Open("../../test/data/opengraph_other.html")
+					f, err := os.Open("../../test/opengraph_other.html")
 					if err != nil {
-						panic(err.Error())
+						t.Fatal(err.Error())
 					}
 					doc, err := document.NewDocument("", f)
 					if err != nil {
-						panic(err.Error())
+						t.Fatal(err.Error())
 					}
 
 					res, typ, err := e.ExtractValues(*doc)
@@ -145,61 +149,6 @@ func TestExtractValues(t *testing.T) {
 			})
 			Convey("And a page that does not support opengraph is given", func() {
 
-			})
-		})
-	})
-}
-
-func TestCreateMapFromProps(t *testing.T) {
-	Convey("Subject: Create map from properties", t, func() {
-		var props map[string]interface{}
-
-		Convey("Given a map of properties", func() {
-			props = map[string]interface{}{
-				"hello": "world",
-				"foo":   "bar",
-				"baz":   "baz",
-			}
-
-			Convey("When I create a map using a key that does not exist in the map", func() {
-				m := createMapFromProps(props, map[string]string{
-					"Test": "Test",
-				})
-				Convey("An empty map is returned", func() {
-					So(m, ShouldResemble, map[string]interface{}{})
-				})
-			})
-			Convey("When I create a map using a key that does exist in the map", func() {
-				m := createMapFromProps(props, map[string]string{
-					"hello": "hello",
-				})
-				Convey("An map with the key 'hello' is returned", func() {
-					So(m, ShouldResemble, map[string]interface{}{
-						"hello": "world",
-					})
-				})
-			})
-			Convey("When I create a map using multiple keys that do exist in the map", func() {
-				m := createMapFromProps(props, map[string]string{
-					"hello": "hello",
-					"foo":   "foo",
-				})
-				Convey("An map with the keys 'hello' and 'foo' is returned", func() {
-					So(m, ShouldResemble, map[string]interface{}{
-						"hello": "world",
-						"foo":   "bar",
-					})
-				})
-			})
-			Convey("When I create a map and rename a field", func() {
-				m := createMapFromProps(props, map[string]string{
-					"foo": "baz",
-				})
-				Convey("A map with the key 'foo' is returned", func() {
-					So(m, ShouldResemble, map[string]interface{}{
-						"foo": "baz",
-					})
-				})
 			})
 		})
 	})

@@ -26,18 +26,11 @@ type Sandbox interface {
 	Init() error
 	Destroy() error
 
-	// Sandbox state
-	Status() int
-	Output() string
-	LastError() string
-
 	// Plugin functions
-	ProcessMessage(msg *SandboxMessage) int
+	ProcessMessage(msg *SandboxMessage) error
 }
 
 type SandboxConfig struct {
-	Id         string `json:id"`
 	Script     string `json:"script"`
 	ScriptType string `json:"script_type"`
-	Config     map[string]interface{}
 }

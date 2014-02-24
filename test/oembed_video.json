@@ -1,0 +1,12 @@
+{
+    "version": "1.0",
+    "type": "video",
+    "provider_name": "Provider",
+    "provider_url": "Provider Url",
+    "width": 425,
+    "height": 344,
+    "title": "Title",
+    "author_name": "Author",
+    "author_url": "Author Url",
+    "html": "HTML"
+}

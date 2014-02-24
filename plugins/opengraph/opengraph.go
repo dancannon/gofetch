@@ -3,6 +3,7 @@ package opengraph
 import (
 	"github.com/dancannon/gofetch/document"
 	. "github.com/dancannon/gofetch/plugins"
+	"github.com/dancannon/gofetch/util"
 
 	"strings"
 )
@@ -60,7 +61,7 @@ func (e *OpengraphExtractor) ExtractValues(doc document.Document) (interface{}, 
 	if strings.Contains(props["type"].(string), "image") ||
 		strings.Contains(props["type"].(string), "photo") {
 		pagetype = "image"
-		values = createMapFromProps(props, map[string]string{
+		values = util.CreateMapFromProps(props, map[string]string{
 			"title":  "title",
 			"url":    "image",
 			"width":  "image:width",
@@ -68,31 +69,19 @@ func (e *OpengraphExtractor) ExtractValues(doc document.Document) (interface{}, 
 		})
 	} else if strings.Contains(props["type"].(string), "article") {
 		pagetype = "text"
-		values = createMapFromProps(props, map[string]string{
+		values = util.CreateMapFromProps(props, map[string]string{
 			"title": "title",
 			"text":  "description",
 		})
 	} else {
 		pagetype = "general"
-		values = createMapFromProps(props, map[string]string{
+		values = util.CreateMapFromProps(props, map[string]string{
 			"title":   "title",
 			"content": "description",
 		})
 	}
 
 	return values, pagetype, nil
-}
-
-func createMapFromProps(props map[string]interface{}, keys map[string]string) map[string]interface{} {
-	m := make(map[string]interface{})
-
-	for mapKey, propKey := range keys {
-		if val, ok := props[propKey]; ok {
-			m[mapKey] = val
-		}
-	}
-
-	return m
 }
 
 func init() {

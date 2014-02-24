@@ -38,7 +38,7 @@ func TestLoadConfig(t *testing.T) {
 			})
 			Convey("With multiple nodes", func() {
 				// Load html from file
-				r, err := os.Open("../test/data/simple.html")
+				r, err := os.Open("../test/simple.html")
 				if err != nil {
 					panic(err)
 				}
@@ -51,8 +51,8 @@ func TestLoadConfig(t *testing.T) {
 				Convey("The title is 'Starter Template for Bootstrap'", func() {
 					So(doc.Title, ShouldEqual, "Starter Template for Bootstrap")
 				})
-				Convey("There are no meta tags", func() {
-					So(len(doc.Meta), ShouldEqual, 5)
+				Convey("There are 3 meta tags", func() {
+					So(len(doc.Meta), ShouldEqual, 3)
 				})
 				Convey("There body field contains the body node", func() {
 					So(doc.Body, ShouldNotBeNil)

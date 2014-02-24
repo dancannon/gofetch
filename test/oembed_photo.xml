@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?>
+<oembed>
+    <version>1.0</version>
+    <cache_age>3600</cache_age>
+    <type>photo</type>
+    <width>240</width>
+    <height>160</height>
+    <title>Title</title>
+    <url>Url</url>
+    <author_name>Author</author_name>
+    <author_url>Author Url</author_url>
+    <thumbnail_url>Thumbnail Url</thumbnail_url>
+    <thumbnail_width>75</thumbnail_width>
+    <thumbnail_height>75</thumbnail_height>
+    <provider_name>Provider</provider_name>
+    <provider_url>Provider Url</provider_url>
+</oembed>

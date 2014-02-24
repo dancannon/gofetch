@@ -1,0 +1,12 @@
+{
+    "version": "1.0",
+    "type": "photo",
+    "width": 240,
+    "height": 160,
+    "title": "Title",
+    "url": "Url",
+    "author_name": "Author",
+    "author_url": "Author Url",
+    "provider_name": "Provider",
+    "provider_url": "Provider Url"
+}
