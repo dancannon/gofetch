@@ -2,7 +2,6 @@ package gofetch
 
 import (
 	"fmt"
-	"github.com/davecgh/go-spew/spew"
 	"io"
 	"net/http"
 	"net/http/httptest"
@@ -71,12 +70,10 @@ func init() {
 }
 
 func TestFetchRemoteUrl(t *testing.T) {
-	t.Skip("Skipped remote tests")
-
 	var fetcher *Fetcher
 
 	for _, tt := range remoteTests {
-		Convey(fmt.Sprintf("Subject: Test fetch content from URL %s", tt.url), t, func() {
+		SkipConvey(fmt.Sprintf("Subject: Test fetch content from URL %s", tt.url), t, func() {
 			Convey("Given a new fetcher instance", func() {
 				fetcher = NewFetcher(conf)
 
@@ -579,11 +576,4 @@ func TestValidation(t *testing.T) {
 			})
 		})
 	})
-}
-
-func TestTest(t *testing.T) {
-	t.Skip("Skipped TestTest")
-	fetcher := NewFetcher(conf)
-	res, err := fetcher.Fetch("https://github.com/dancannon/gorethink/issues/51")
-	spew.Dump(res, err)
 }
