@@ -151,6 +151,7 @@ func TestExtractValues(t *testing.T) {
 								"title":  "Title",
 								"width":  240,
 								"height": 160,
+								"url":    "Url",
 								"author": map[string]interface{}{
 									"name": "Author",
 									"url":  "Author Url",
@@ -278,6 +279,7 @@ func TestExtractValues(t *testing.T) {
 								"title":  "Title",
 								"width":  240,
 								"height": 160,
+								"url":    "Url",
 								"author": map[string]interface{}{
 									"name": "Author",
 									"url":  "Author Url",

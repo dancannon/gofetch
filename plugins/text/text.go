@@ -180,7 +180,7 @@ func (e *TextExtractor) parseDocument(d document.Document) []TextBlock {
 	re2 := regexp.MustCompile("[\t\n\f\r ]+$")
 
 	for _, block := range blocks {
-		if block.Type != 0 {
+		if block.Type != Content {
 			tmp = append(tmp, block)
 		} else if block.Text != "" && !re.MatchString(block.Text) {
 			// Trim trailing whitespace
@@ -200,36 +200,9 @@ func (e *TextExtractor) parseDocument(d document.Document) []TextBlock {
 
 func (e *TextExtractor) clasifyBlocks(blocks []TextBlock) []TextBlock {
 	for k, block := range blocks {
-		if block.Type == 0 {
-			// Get previous and next blocks
-			var prev, next TextBlock
-			if k == 0 {
-				prev = TextBlock{}
-			} else if k >= len(blocks)-1 {
-				next = TextBlock{}
-			} else {
-				prev = blocks[k-1]
-				next = blocks[k+1]
-			}
-
-			if block.LinkDensity <= 0.333333 {
-				if prev.LinkDensity <= 0.555555 {
-					if block.TextDensity <= 10 {
-						blocks[k].Type = NotContent
-					} else {
-						blocks[k].Type = Content
-					}
-				} else {
-					if next.TextDensity <= 10 {
-						blocks[k].Type = NotContent
-					} else {
-						blocks[k].Type = Content
-					}
-				}
-			} else {
-				blocks[k].Type = NotContent
-			}
-		}
+		bp := &block
+		bp.Classify()
+		blocks[k] = *bp
 	}
 
 	return blocks

@@ -3,6 +3,7 @@ package gofetch
 import (
 	"github.com/dancannon/gofetch/config"
 	"github.com/dancannon/gofetch/document"
+	"github.com/davecgh/go-spew/spew"
 	neturl "net/url"
 
 	. "github.com/dancannon/gofetch/plugins"
@@ -340,6 +341,7 @@ func validateResultValues(pagetype string, values interface{}, typValues interfa
 				if required, ok := v["required"].(bool); ok && required {
 					if _, ok := valuesM[k]; !ok {
 
+						spew.Dump(values, pagetype, k)
 						return fmt.Errorf("The type %s requires the field %s", pagetype, k)
 					}
 				}

@@ -28,8 +28,8 @@ var remoteTests = []struct {
 	{"http://www.youtube.com/watch?v=-UUx10KOWIE", "video"},
 	{"http://blog.danielcannon.co.uk/2012/07/02/building-a-real-application-with-backbonejs", "text"},
 	{"http://www.bbc.co.uk/news/uk-26111598", "text"},
-	{"http://imgur.com/7T7MrBc", "photo"},
-	{"http://www.flickr.com/photos/bees/2341623661/", "photo"},
+	{"http://imgur.com/7T7MrBc", "image"},
+	{"http://www.flickr.com/photos/bees/2341623661/", "image"},
 	{"http://stackoverflow.com/questions/7438323/method-requires-pointer-receiver-in-go-programming-language/", "general"},
 }
 var localTests = []struct {

@@ -156,6 +156,7 @@ func (e *OEmbedExtractor) ExtractValues(doc document.Document) (interface{}, str
 			"html":       "html",
 			"width:int":  "width",
 			"height:int": "height",
+			"url":        "url",
 		})
 		if _, ok := props["author_url"]; ok {
 			res["author"] = util.CreateMapFromProps(props, map[string]string{

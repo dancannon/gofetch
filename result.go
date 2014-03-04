@@ -8,5 +8,5 @@ type Result struct {
 	Url      string
 	PageType string
 	Content  interface{}
-	Response http.Response
+	Response http.Response `json:"-"`
 }

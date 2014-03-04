@@ -1,4 +1,4 @@
-package selector_text
+package base
 
 import (
 	"github.com/dancannon/gofetch/document"
