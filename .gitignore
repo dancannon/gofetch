@@ -19,7 +19,8 @@ _cgo_export.*
 
 _testmain.go
 
+gonews
+gofetch
 *.exe
-
 
 report
