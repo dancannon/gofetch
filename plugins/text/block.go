@@ -1,13 +1,95 @@
 package text
 
 import (
+	"bytes"
+	"fmt"
 	"strings"
 )
 
+type TagType uint32
+
+const (
+	ElementTag TagType = iota
+	TextTag
+	StartTag
+	EndTag
+	NewLineTag
+	SelfClosingTag
+	RawTag
+)
+
+type Blocks []Block
+
+func (blocks Blocks) String(html bool) string {
+	buf := bytes.Buffer{}
+	if html {
+		for _, block := range blocks {
+			switch block.TagType {
+			case StartTag:
+				buf.WriteString(fmt.Sprintf("<%s%s>\n", block.Tag, block.AttrString()))
+			case EndTag:
+				buf.WriteString(fmt.Sprintf("</%s>\n", block.Tag))
+			case SelfClosingTag:
+				buf.WriteString(fmt.Sprintf("<%s%s />", block.Tag, block.AttrString()))
+			case NewLineTag:
+				buf.WriteString("<br />")
+			case ElementTag:
+				buf.WriteString(fmt.Sprintf("<%s%s>%s</%s>\n", block.Tag, block.AttrString(), block.Data, block.Tag))
+			case TextTag, RawTag:
+				buf.WriteString(block.Data)
+			}
+		}
+	} else {
+		for _, block := range blocks {
+			switch block.TagType {
+			case StartTag:
+				buf.WriteString("\n")
+			case EndTag:
+				buf.WriteString("\n")
+			case NewLineTag:
+				buf.WriteString("\n")
+			case ElementTag:
+				switch block.Tag {
+				case "li":
+					buf.WriteString(fmt.Sprintf("  - %s\n", block.Data))
+				case "h1":
+					buf.WriteString(fmt.Sprintf("#%s\n", block.Data))
+				case "h2":
+					buf.WriteString(fmt.Sprintf("##%s\n", block.Data))
+				case "h3":
+					buf.WriteString(fmt.Sprintf("###%s\n", block.Data))
+				case "h4":
+					buf.WriteString(fmt.Sprintf("####%s\n", block.Data))
+				case "h5":
+					buf.WriteString(fmt.Sprintf("#####%s\n", block.Data))
+				case "h6":
+					buf.WriteString(fmt.Sprintf("######%s\n", block.Data))
+				default:
+					buf.WriteString(fmt.Sprintf("%s\n", block.Data))
+				}
+			case TextTag:
+				buf.WriteString(block.Data)
+			}
+		}
+	}
+
+	return buf.String()
+}
+
 type Block struct {
-	Tag      string
-	Attrs    map[string]string
-	Children []Block
+	IsContent bool
+	Tag       string
+	TagType   TagType
+	Attrs     map[string]string
+	Data      string
+}
+
+func (b Block) AttrString() string {
+	buf := bytes.Buffer{}
+	for k, v := range b.Attrs {
+		buf.WriteString(fmt.Sprintf(" %s=%s", k, v))
+	}
+	return buf.String()
 }
 
 type TextBlock struct {
@@ -27,7 +109,7 @@ type TextBlock struct {
 	LinkDensity float64
 }
 
-func (b *TextBlock) Add(text string, html string, inLink bool) {
+func (b *TextBlock) AddText(text string, inLink bool) {
 	words := strings.Fields(text)
 
 	// Increment counts

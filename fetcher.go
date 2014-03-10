@@ -393,3 +393,10 @@ func validateResultValues(pagetype string, values interface{}, typValues interfa
 
 	return nil
 }
+
+func init() {
+	spew.Config = spew.ConfigState{
+		MaxDepth: 5,
+		Indent:   "\t",
+	}
+}

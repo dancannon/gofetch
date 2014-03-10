@@ -1,13 +1,14 @@
 package text
 
 import (
+	"bytes"
+	"fmt"
 	"github.com/dancannon/gofetch/document"
 	. "github.com/dancannon/gofetch/plugins"
-	"github.com/dancannon/gofetch/util"
-	"github.com/davecgh/go-spew/spew"
+	htmlutil "html"
+	"regexp"
 
 	"code.google.com/p/go.net/html"
-	"regexp"
 )
 
 type ContentType int
@@ -41,158 +42,182 @@ func (e *TextExtractor) Setup(config interface{}) error {
 }
 
 func (e *TextExtractor) Extract(doc document.Document) (interface{}, error) {
-	blocks := e.parseDocument(doc)
-	blocks = e.clasifyBlocks(blocks)
+	blocks := e.parseNode(doc.Body.Node())
+	// e.parseNode(doc.Body.Node())
+
+	// spew.Dump(blocks.String(false))
+	fmt.Println(blocks.String(true))
 
 	content := ""
-	hasContent := false
-	spew.Dump(e.format)
-	switch e.format {
-	case "text":
-		for _, block := range blocks {
-			if block.Type == Content {
-				hasContent = true
-				content += block.Text + "\n\n"
-			}
-		}
-	case "simple":
-		for _, block := range blocks {
-			if block.Type == Content {
-				hasContent = true
-				content += block.Text + "<br />"
-			}
-		}
-	case "raw":
-		fallthrough
-	default:
-		for _, block := range blocks {
-			if block.Type == Tag_Start {
-				content += "<" + block.Tag + ">"
-			} else if block.Type == Tag_End {
-				content += "</" + block.Tag + ">"
-			} else if block.Type == Content {
-				hasContent = true
-				content += "<" + block.Tag + ">" + block.Text + "</" + block.Tag + ">"
-			}
-		}
-	}
-
-	if !hasContent {
-		return "", nil
-	}
-
 	return content, nil
 }
 
-func (e *TextExtractor) parseDocument(d document.Document) []TextBlock {
-	blocks := []TextBlock{}
-	currentBlock := TextBlock{}
-	flush := false
-	inLink := false
-	currTag := ""
+func (e *TextExtractor) parseNode(n *html.Node) Blocks {
+	blocks := Blocks{}
 
 	var f func(*html.Node)
 	f = func(n *html.Node) {
-		if n.Type == html.ElementNode {
-			if currTag == "" {
-				currTag = n.Data
-			}
+		addEndTag := false
 
+		if n.Type == html.ElementNode {
+			fmt.Println(n.Data)
 			switch n.Data {
-			case "script", "style", "option", "object", "embed", "applet", "link", "noscript":
-				//Ignore
+			case "body":
+			case "h1", "h2", "h3", "h4", "h5", "h6":
+				blocks = append(blocks, Block{
+					Tag:     n.Data,
+					TagType: ElementTag,
+					Data:    e.getNodeText(n).String(false),
+				})
+				return
+			case "img":
+				blocks = append(blocks, e.extractImage(n))
+				return
+			case "ol", "ul":
+				blocks = append(blocks, e.extractList(n)...)
+				return
+			case "br":
+				blocks = append(blocks, Block{
+					TagType: NewLineTag,
+				})
+			case "table", "tbody", "tfoot", "tr", "th", "td":
+				buf := &bytes.Buffer{}
+				html.Render(buf, n)
+
+				blocks = append(blocks, Block{
+					TagType: RawTag,
+					Data:    buf.String(),
+				})
 				return
 			case "a":
-				inLink = true
-				fallthrough
-			case "strike", "u", "b", "i", "em", "strong", "span", "sup",
-				"code", "tt", "sub", "var", "font":
-				// Inline
-				flush = false
 			default:
-				// Block
-				flush = true
-			}
-		} else if n.Type == html.TextNode {
-			if flush {
-				currentBlock.Tag = currTag
-				currentBlock.Flush()
+				data := e.getNodeText(n).String(false)
+				if data != "" {
+					blocks = append(blocks, Block{
+						TagType: TextTag,
+						Data:    data,
+					})
+				}
+				return
 
-				blocks = append(blocks, currentBlock)
-				currentBlock = TextBlock{}
-				flush = false
+			// Block elements
+			case "article", "aside", "blockquote", "dd", "div", "dl", "fieldset",
+				"figcaption", "figure", "footer", "form", "header", "hgroup",
+				"output", "p", "pre", "section":
+				addEndTag = true
+				blocks = append(blocks, Block{
+					Tag:     n.Data,
+					TagType: StartTag,
+				})
 			}
-
-			currentBlock.AddText(util.GetNodeText(n), inLink)
+		} else {
+			data := e.getNodeText(n).String(false)
+			if data != "" {
+				blocks = append(blocks, Block{
+					TagType: TextTag,
+					Data:    data,
+				})
+			}
+			return
 		}
 
 		for c := n.FirstChild; c != nil; c = c.NextSibling {
 			f(c)
 		}
 
-		if n.Type == html.ElementNode {
-			switch n.Data {
-			// case "ul", "ol":
-			// 	currentBlock.Tag = currTag
-			// 	currentBlock.Flush()
-			// 	blocks = append(blocks, currentBlock)
-
-			// 	currentBlock = TextBlock{}
-			// 	currentBlock.Tag = n.Data
-			// 	currentBlock.Type = Tag_End
-			// 	currentBlock.Flush()
-			// 	blocks = append(blocks, currentBlock)
-
-			// 	currentBlock = TextBlock{}
-			// 	currTag = ""
-			case "a":
-				inLink = false
-				fallthrough
-			case "strike", "u", "b", "i", "em", "strong", "span", "sup",
-				"code", "tt", "sub", "var", "font":
-				// Inline
-				flush = false
-			default:
-				// Block
-				flush = true
-			}
-		}
-
-		if flush {
-			currentBlock.Tag = currTag
-			currentBlock.Flush()
-
-			blocks = append(blocks, currentBlock)
-			currentBlock = TextBlock{}
-			currTag = ""
+		if addEndTag {
+			blocks = append(blocks, Block{
+				Tag:     "p",
+				TagType: EndTag,
+			})
 		}
 	}
 
-	f(d.Body.Node())
-
-	// Clean blocks
-	tmp := []TextBlock{}
-	re := regexp.MustCompile("^[\t\n\f\r ]+$")
-	re1 := regexp.MustCompile("^[\t\n\f\r ]+")
-	re2 := regexp.MustCompile("[\t\n\f\r ]+$")
-
-	for _, block := range blocks {
-		if block.Type != Content {
-			tmp = append(tmp, block)
-		} else if block.Text != "" && !re.MatchString(block.Text) {
-			// Trim trailing whitespace
-			block.Text = re1.ReplaceAllString(block.Text, "")
-			block.Text = re2.ReplaceAllString(block.Text, "")
-			tmp = append(tmp, block)
-		}
-	}
-	blocks = tmp
-
-	// Calculate block totals
-	// for k, block := range e.blocks {
-	// }
+	f(n)
 
 	return blocks
+}
+
+func (e *TextExtractor) extractImage(n *html.Node) Block {
+	attrs := map[string]string{}
+
+	// Collect attributes
+	for _, a := range n.Attr {
+		switch a.Key {
+		case "src", "width", "height":
+			attrs[a.Key] = a.Val
+		}
+	}
+
+	return Block{
+		Tag:     n.Data,
+		TagType: SelfClosingTag,
+		Attrs:   attrs,
+	}
+}
+
+func (e *TextExtractor) extractList(n *html.Node) Blocks {
+	blocks := Blocks{}
+
+	blocks = append(blocks, Block{
+		Tag:     n.Data,
+		TagType: StartTag,
+	})
+
+	// Collect list items
+	for c := n.FirstChild; c != nil; c = c.NextSibling {
+		if c.Type == html.ElementNode {
+			blocks = append(blocks, Block{
+				Tag:     "li",
+				TagType: ElementTag,
+				Data:    e.getNodeText(c).String(false),
+			})
+		}
+	}
+
+	blocks = append(blocks, Block{
+		Tag:     n.Data,
+		TagType: EndTag,
+	})
+
+	return blocks
+}
+
+func (e *TextExtractor) getNodeText(n *html.Node) Blocks {
+	if n.Type == html.TextNode {
+		var re *regexp.Regexp
+
+		data := n.Data
+		re = regexp.MustCompile("[\t\r\n]+")
+		data = re.ReplaceAllString(data, "")
+		re = regexp.MustCompile(" {2,}")
+		data = re.ReplaceAllString(data, " ")
+		data = htmlutil.EscapeString(data)
+
+		if data != "" {
+			return Blocks{
+				Block{
+					TagType: TextTag,
+					Data:    data,
+				},
+			}
+		} else {
+			return Blocks{}
+		}
+	} else if n.Type == html.ElementNode {
+		switch n.Data {
+		case "article", "aside", "blockquote", "div", "fieldset", "p", "pre", "td", "section":
+			return e.parseNode(n)
+		default:
+			blocks := Blocks{}
+			for c := n.FirstChild; c != nil; c = c.NextSibling {
+				blocks = append(blocks, e.parseNode(c)...)
+			}
+			return blocks
+		}
+	} else {
+		return Blocks{}
+	}
 }
 
 func (e *TextExtractor) clasifyBlocks(blocks []TextBlock) []TextBlock {

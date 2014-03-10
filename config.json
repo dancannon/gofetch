@@ -160,6 +160,7 @@
             "id": "base"
         }]
     }, {
+
         "id": "bbc_news",
         "priority": 5,
         "type": "text",
