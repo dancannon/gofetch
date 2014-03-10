@@ -1,14 +1,20 @@
 package text
 
 import (
-	"github.com/davecgh/go-spew/spew"
 	"strings"
 )
 
+type Block struct {
+	Tag      string
+	Attrs    map[string]string
+	Children []Block
+}
+
 type TextBlock struct {
 	Type ContentType
-	Text string
+
 	Tag  string
+	Text string
 
 	NumChars        int
 	NumWords        int
@@ -21,7 +27,7 @@ type TextBlock struct {
 	LinkDensity float64
 }
 
-func (b *TextBlock) AddText(text string, inLink bool) {
+func (b *TextBlock) Add(text string, html string, inLink bool) {
 	words := strings.Fields(text)
 
 	// Increment counts
@@ -88,7 +94,6 @@ func (b *TextBlock) Classify() {
 		b.Type = NotContent
 	} else {
 		score := ((b.TextDensity * 0.5) + ((b.LinkDensity) * 0.3) + (b.LineDensity*0.2)*100)
-		spew.Dump(b)
 		if score >= 0.45 {
 			b.Type = Content
 		} else {

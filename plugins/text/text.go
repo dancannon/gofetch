@@ -3,6 +3,8 @@ package text
 import (
 	"github.com/dancannon/gofetch/document"
 	. "github.com/dancannon/gofetch/plugins"
+	"github.com/dancannon/gofetch/util"
+	"github.com/davecgh/go-spew/spew"
 
 	"code.google.com/p/go.net/html"
 	"regexp"
@@ -44,7 +46,15 @@ func (e *TextExtractor) Extract(doc document.Document) (interface{}, error) {
 
 	content := ""
 	hasContent := false
+	spew.Dump(e.format)
 	switch e.format {
+	case "text":
+		for _, block := range blocks {
+			if block.Type == Content {
+				hasContent = true
+				content += block.Text + "\n\n"
+			}
+		}
 	case "simple":
 		for _, block := range blocks {
 			if block.Type == Content {
@@ -52,7 +62,7 @@ func (e *TextExtractor) Extract(doc document.Document) (interface{}, error) {
 				content += block.Text + "<br />"
 			}
 		}
-	case "html":
+	case "raw":
 		fallthrough
 	default:
 		for _, block := range blocks {
@@ -89,22 +99,9 @@ func (e *TextExtractor) parseDocument(d document.Document) []TextBlock {
 			}
 
 			switch n.Data {
-			case "option", "object", "embed", "applet", "link", "noscript":
+			case "script", "style", "option", "object", "embed", "applet", "link", "noscript":
 				//Ignore
 				return
-			case "ul", "ol":
-				currentBlock.Tag = currTag
-				currentBlock.Flush()
-				blocks = append(blocks, currentBlock)
-
-				currentBlock = TextBlock{}
-				currentBlock.Tag = n.Data
-				currentBlock.Type = Tag_Start
-				currentBlock.Flush()
-				blocks = append(blocks, currentBlock)
-
-				currentBlock = TextBlock{}
-				currTag = ""
 			case "a":
 				inLink = true
 				fallthrough
@@ -126,7 +123,7 @@ func (e *TextExtractor) parseDocument(d document.Document) []TextBlock {
 				flush = false
 			}
 
-			currentBlock.AddText(n.Data, inLink)
+			currentBlock.AddText(util.GetNodeText(n), inLink)
 		}
 
 		for c := n.FirstChild; c != nil; c = c.NextSibling {
@@ -135,19 +132,19 @@ func (e *TextExtractor) parseDocument(d document.Document) []TextBlock {
 
 		if n.Type == html.ElementNode {
 			switch n.Data {
-			case "ul", "ol":
-				currentBlock.Tag = currTag
-				currentBlock.Flush()
-				blocks = append(blocks, currentBlock)
+			// case "ul", "ol":
+			// 	currentBlock.Tag = currTag
+			// 	currentBlock.Flush()
+			// 	blocks = append(blocks, currentBlock)
 
-				currentBlock = TextBlock{}
-				currentBlock.Tag = n.Data
-				currentBlock.Type = Tag_End
-				currentBlock.Flush()
-				blocks = append(blocks, currentBlock)
+			// 	currentBlock = TextBlock{}
+			// 	currentBlock.Tag = n.Data
+			// 	currentBlock.Type = Tag_End
+			// 	currentBlock.Flush()
+			// 	blocks = append(blocks, currentBlock)
 
-				currentBlock = TextBlock{}
-				currTag = ""
+			// 	currentBlock = TextBlock{}
+			// 	currTag = ""
 			case "a":
 				inLink = false
 				fallthrough

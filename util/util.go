@@ -1,10 +1,57 @@
 package util
 
 import (
+	"bytes"
+	"code.google.com/p/go.net/html"
+	"github.com/PuerkitoBio/goquery"
+	htmlutil "html"
 	"reflect"
+	"regexp"
 	"strconv"
 	"strings"
 )
+
+func SelectionToString(selection *goquery.Selection) string {
+	var buf bytes.Buffer
+
+	// Slightly optimized vs calling Each(): no single selection object created
+	for _, n := range selection.Nodes {
+		buf.WriteString(GetNodeText(n))
+		buf.WriteString("\n")
+	}
+	return buf.String()
+}
+
+func GetNodeText(node *html.Node) string {
+	if node.Type == html.TextNode {
+		var re *regexp.Regexp
+
+		t := node.Data
+		re = regexp.MustCompile("[\t\r\n]+")
+		t = re.ReplaceAllString(t, "")
+		re = regexp.MustCompile(" {2,}")
+		t = re.ReplaceAllString(t, " ")
+		t = htmlutil.EscapeString(t)
+
+		return t
+	} else if node.FirstChild != nil {
+		var buf bytes.Buffer
+		for c := node.FirstChild; c != nil; c = c.NextSibling {
+			buf.WriteString(GetNodeText(c))
+			if c.Type == html.ElementNode {
+				switch c.Data {
+				case "strike", "u", "b", "i", "em", "strong", "span", "sup",
+					"code", "tt", "sub", "var", "font":
+				default:
+					buf.WriteString("\n")
+				}
+			}
+		}
+		return buf.String()
+	}
+
+	return ""
+}
 
 func CreateMapFromProps(props map[string]interface{}, keys map[string]string) map[string]interface{} {
 	m := make(map[string]interface{})

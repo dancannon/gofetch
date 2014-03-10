@@ -40,8 +40,19 @@ func (f *Fetcher) Fetch(url string) (Result, error) {
 	// Sort the rules
 	sort.Sort(sort.Reverse(config.RuleSlice(f.Config.Rules)))
 
+	// Fix the URL if needed
+	u, err := neturl.Parse(url)
+	if err != nil {
+		return Result{}, err
+	} else {
+		// Ensure URL is valid for extraction
+		if u.Scheme == "" {
+			u.Scheme = "http"
+		}
+	}
+
 	// Make request
-	response, err := http.Get(url)
+	response, err := http.Get(u.String())
 	if err != nil {
 		return Result{}, err
 	}
@@ -113,7 +124,7 @@ func (f *Fetcher) parseDocument(doc *document.Document) (Result, error) {
 	res.Content = make(map[string]interface{})
 
 	// Parse the request URL
-	url, err := neturl.Parse(doc.Url)
+	u, err := neturl.Parse(doc.Url)
 	if err != nil {
 		return Result{}, err
 	}
@@ -126,7 +137,7 @@ func (f *Fetcher) parseDocument(doc *document.Document) (Result, error) {
 
 			// Check url against the url regular expression
 			re = regexp.MustCompile(rule.UrlPattern)
-			if !re.MatchString(url.String()) {
+			if !re.MatchString(u.String()) {
 				continue
 			}
 		} else {
@@ -135,7 +146,7 @@ func (f *Fetcher) parseDocument(doc *document.Document) (Result, error) {
 			var re *regexp.Regexp
 			// Clean host
 			re = regexp.MustCompile(".*?://")
-			host := re.ReplaceAllString(strings.TrimLeft(url.Host, "www."), "")
+			host := re.ReplaceAllString(strings.TrimLeft(u.Host, "www."), "")
 			ruleHost := re.ReplaceAllString(strings.TrimLeft(rule.Host, "www."), "")
 
 			// Check host
@@ -145,7 +156,7 @@ func (f *Fetcher) parseDocument(doc *document.Document) (Result, error) {
 
 			// Check path against the path regular expression
 			re = regexp.MustCompile(rule.PathPattern)
-			if !re.MatchString(url.RequestURI()) {
+			if !re.MatchString(u.RequestURI()) {
 				continue
 			}
 		}

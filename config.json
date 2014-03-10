@@ -111,7 +111,7 @@
                         "required": true
                     },
                     "url": {
-                        "required": true
+                        "required": false
                     }
                 }
             },
@@ -136,6 +136,9 @@
     }, {
         "id": "rich",
         "values": {
+            "title": {
+                "required": true
+            },
             "html": {
                 "required": true
             },
