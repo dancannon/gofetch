@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"github.com/dancannon/gofetch/document"
 	. "github.com/dancannon/gofetch/plugins"
+	"github.com/davecgh/go-spew/spew"
 	htmlutil "html"
 	"regexp"
 
@@ -104,6 +105,11 @@ func (e *TextExtractor) parseNode(n *html.Node) Blocks {
 			case "article", "aside", "blockquote", "dd", "div", "dl", "fieldset",
 				"figcaption", "figure", "footer", "form", "header", "hgroup",
 				"output", "p", "pre", "section":
+				// Attempt to check if the element only contains one non-empty child
+				for c := n.FirstChild; c != nil; c = c.NextSibling {
+					spew.Dump(c)
+				}
+
 				addEndTag = true
 				blocks = append(blocks, Block{
 					Tag:     n.Data,
