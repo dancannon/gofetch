@@ -2,6 +2,7 @@ package text
 
 import (
 	"bytes"
+	"code.google.com/p/go.net/html"
 	"fmt"
 	"strings"
 )
@@ -18,7 +19,28 @@ const (
 	RawTag
 )
 
-type Blocks []Block
+type Blocks []*Block
+
+var startBlock *Block
+
+func (b Blocks) Add(blocks ...*Block) Blocks {
+	b = append(b, blocks...)
+
+	return b
+}
+func (b Blocks) AddStartBlock(block *Block) Blocks {
+	startBlock = block
+	b = append(b, block)
+
+	return b
+}
+func (b Blocks) AddEndBlock(block *Block) Blocks {
+	block.StartBlock = startBlock
+	startBlock.EndBlock = block
+	b = append(b, block)
+
+	return b
+}
 
 func (blocks Blocks) String(html bool) string {
 	buf := bytes.Buffer{}
@@ -82,6 +104,9 @@ type Block struct {
 	TagType   TagType
 	Attrs     map[string]string
 	Data      string
+
+	StartBlock *Block
+	EndBlock   *Block
 }
 
 func (b Block) AttrString() string {
@@ -93,19 +118,12 @@ func (b Block) AttrString() string {
 }
 
 type TextBlock struct {
-	Type ContentType
+	Data string
 
-	Tag  string
-	Text string
+	NumWords       int
+	NumLinks       int
+	NumLinkedWords int
 
-	NumChars        int
-	NumWords        int
-	NumLinkedWords  int
-	NumWrappedWords int
-	NumLines        int
-
-	TextDensity float64
-	LineDensity float64
 	LinkDensity float64
 }
 
@@ -114,73 +132,19 @@ func (b *TextBlock) AddText(text string, inLink bool) {
 
 	// Increment counts
 	b.NumWords += len(words)
-	b.NumChars += len(text)
 	if inLink {
+		b.NumLinks++
 		b.NumLinkedWords += len(words)
 	}
 
-	b.Text = b.Text + text
+	b.Data = b.Data + text
 }
 
 func (b *TextBlock) Flush() {
-	// Count the number of lines
-	words := strings.Fields(b.Text)
-	currLineChars := 0
-	currLineWords := 0
-
-	b.NumLines = 0
-	b.NumWrappedWords = 0
-
-	for _, word := range words {
-		currLineChars += len(word)
-		currLineWords += 1
-
-		if currLineChars > lineLength {
-			b.NumLines++
-			b.NumWrappedWords = 0
-
-			currLineChars = 0
-			currLineWords = 0
-		}
-	}
-
-	if b.NumLines == 0 {
-		b.NumWrappedWords = b.NumWords
-		b.NumLines = 1
-	} else {
-		b.NumWrappedWords = b.NumWords - currLineWords
-	}
-
-	if b.NumWords == 0 {
-		b.TextDensity = 0
-	} else {
-		b.TextDensity = (float64(countDistinctWords(b.Text)) / float64(b.NumWords)) * 100
-	}
-	if b.NumWrappedWords == 0 {
-		b.LineDensity = 0
-	} else {
-		b.LineDensity = (float64(b.NumLines) / float64(b.NumWrappedWords)) * 100
-	}
 	if b.NumWords == 0 {
 		b.LinkDensity = 0
 	} else {
-		b.LinkDensity = 100 - ((float64(b.NumLinkedWords) / float64(b.NumWords)) * 100)
-	}
-}
-
-// The algorithm used for classifying text is based on the boilerpipe library
-// https://code.google.com/p/boilerpipe/
-func (b *TextBlock) Classify() {
-	// If the block is all mark as not content
-	if b.LinkDensity == 0 {
-		b.Type = NotContent
-	} else {
-		score := ((b.TextDensity * 0.5) + ((b.LinkDensity) * 0.3) + (b.LineDensity*0.2)*100)
-		if score >= 0.45 {
-			b.Type = Content
-		} else {
-			b.Type = NotContent
-		}
+		b.LinkDensity = ((float64(b.NumLinkedWords) / float64(b.NumWords)) * float64(b.NumLinks))
 	}
 }
 
@@ -195,4 +159,26 @@ func countDistinctWords(text string) int {
 	}
 
 	return count
+}
+
+func nodeAttrs(n *html.Node, keys ...string) map[string]string {
+	attrs := map[string]string{}
+
+	// Collect attributes
+	for _, a := range n.Attr {
+		if len(keys) == 0 || containsKey(keys, a.Key) {
+			attrs[a.Key] = a.Val
+		}
+	}
+
+	return attrs
+}
+
+func containsKey(s []string, k string) bool {
+	for _, e := range s {
+		if e == k {
+			return true
+		}
+	}
+	return false
 }
