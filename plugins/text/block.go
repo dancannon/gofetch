@@ -7,16 +7,14 @@ import (
 	"strings"
 )
 
-type TagType uint32
+type BlockType uint32
 
 const (
-	ElementTag TagType = iota
-	TextTag
-	StartTag
-	EndTag
-	NewLineTag
-	SelfClosingTag
-	RawTag
+	ElementBlock BlockType = iota
+	TextBlock
+	NewLineBlock
+	SelfClosingBlock
+	RawBlock
 )
 
 type Blocks []*Block
@@ -24,53 +22,22 @@ type Blocks []*Block
 var startBlock *Block
 
 func (b Blocks) Add(blocks ...*Block) Blocks {
-	b = append(b, blocks...)
-
-	return b
-}
-func (b Blocks) AddStartBlock(block *Block) Blocks {
-	startBlock = block
-	b = append(b, block)
-
-	return b
-}
-func (b Blocks) AddEndBlock(block *Block) Blocks {
-	block.StartBlock = startBlock
-	startBlock.EndBlock = block
-	b = append(b, block)
-
-	return b
+	for _, block := range blocks {
+		block.updateTextStats()
+	}
+	return append(b, blocks...)
 }
 
 func (blocks Blocks) String(html bool) string {
 	buf := bytes.Buffer{}
 	if html {
-		for _, block := range blocks {
-			switch block.TagType {
-			case StartTag:
-				buf.WriteString(fmt.Sprintf("<%s%s>\n", block.Tag, block.AttrString()))
-			case EndTag:
-				buf.WriteString(fmt.Sprintf("</%s>\n", block.Tag))
-			case SelfClosingTag:
-				buf.WriteString(fmt.Sprintf("<%s%s />", block.Tag, block.AttrString()))
-			case NewLineTag:
-				buf.WriteString("<br />")
-			case ElementTag:
-				buf.WriteString(fmt.Sprintf("<%s%s>%s</%s>\n", block.Tag, block.AttrString(), block.Data, block.Tag))
-			case TextTag, RawTag:
-				buf.WriteString(block.Data)
-			}
-		}
+		buf.WriteString(blocks.htmlString(""))
 	} else {
 		for _, block := range blocks {
-			switch block.TagType {
-			case StartTag:
+			switch block.Type {
+			case NewLineBlock:
 				buf.WriteString("\n")
-			case EndTag:
-				buf.WriteString("\n")
-			case NewLineTag:
-				buf.WriteString("\n")
-			case ElementTag:
+			case ElementBlock:
 				switch block.Tag {
 				case "li":
 					buf.WriteString(fmt.Sprintf("  - %s\n", block.Data))
@@ -87,9 +54,9 @@ func (blocks Blocks) String(html bool) string {
 				case "h6":
 					buf.WriteString(fmt.Sprintf("######%s\n", block.Data))
 				default:
-					buf.WriteString(fmt.Sprintf("%s\n", block.Data))
+					buf.WriteString(fmt.Sprintf("%s\n", block.Children.String(html)))
 				}
-			case TextTag:
+			case TextBlock:
 				buf.WriteString(block.Data)
 			}
 		}
@@ -98,15 +65,48 @@ func (blocks Blocks) String(html bool) string {
 	return buf.String()
 }
 
-type Block struct {
-	IsContent bool
-	Tag       string
-	TagType   TagType
-	Attrs     map[string]string
-	Data      string
+func (blocks Blocks) htmlString(prefix string) string {
+	buf := bytes.Buffer{}
 
-	StartBlock *Block
-	EndBlock   *Block
+	for _, block := range blocks {
+		switch block.Type {
+		case SelfClosingBlock:
+			buf.WriteString(fmt.Sprintf("<%s%s />", block.Tag, block.AttrString()))
+		case NewLineBlock:
+			buf.WriteString("<br />")
+		case ElementBlock:
+			buf.WriteString(fmt.Sprintf("<%s%s>%s</%s>\n", block.Tag, block.AttrString(), block.Children.htmlString(prefix+"\t"), block.Tag))
+		case TextBlock, RawBlock:
+			buf.WriteString(block.Data)
+		}
+	}
+
+	return buf.String()
+}
+
+func (blocks Blocks) Contains(block *Block) bool {
+	for _, b := range blocks {
+		if b == block {
+			return true
+		}
+	}
+
+	return false
+}
+
+type Block struct {
+	TextStats BlockTextStats
+	Score     int
+
+	IsContent bool
+
+	Tag   string
+	Type  BlockType
+	Attrs map[string]string
+	Data  string
+
+	Parent   *Block
+	Children Blocks
 }
 
 func (b Block) AttrString() string {
@@ -117,17 +117,41 @@ func (b Block) AttrString() string {
 	return buf.String()
 }
 
-type TextBlock struct {
-	Data string
+func (b *Block) updateTextStats() {
+	var f func(*Block, bool)
+	f = func(block *Block, inLink bool) {
+		if block.Type == ElementBlock {
+			if inLink {
+				for _, c := range block.Children {
+					f(c, true)
+				}
+			} else {
+				for _, c := range block.Children {
+					f(c, block.Tag == "a")
+				}
+			}
+		} else if block.Type == TextBlock {
+			b.TextStats.AddText(block.Data, inLink)
+		}
+	}
+
+	f(b, false)
+
+	b.TextStats.Flush()
+}
+
+type BlockTextStats struct {
+	Text string
 
 	NumWords       int
 	NumLinks       int
 	NumLinkedWords int
+	NumStopWords   int
 
 	LinkDensity float64
 }
 
-func (b *TextBlock) AddText(text string, inLink bool) {
+func (b *BlockTextStats) AddText(text string, inLink bool) {
 	words := strings.Fields(text)
 
 	// Increment counts
@@ -137,14 +161,15 @@ func (b *TextBlock) AddText(text string, inLink bool) {
 		b.NumLinkedWords += len(words)
 	}
 
-	b.Data = b.Data + text
+	b.Text = b.Text + text
 }
 
-func (b *TextBlock) Flush() {
+func (b *BlockTextStats) Flush() {
+	b.NumStopWords = stopWordCount(b.Text)
 	if b.NumWords == 0 {
 		b.LinkDensity = 0
 	} else {
-		b.LinkDensity = ((float64(b.NumLinkedWords) / float64(b.NumWords)) * float64(b.NumLinks))
+		b.LinkDensity = (float64(b.NumLinkedWords) / float64(b.NumWords))
 	}
 }
 

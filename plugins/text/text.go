@@ -1,11 +1,12 @@
 package text
 
 import (
-	"bytes"
-	"fmt"
 	"github.com/dancannon/gofetch/document"
 	. "github.com/dancannon/gofetch/plugins"
+	"github.com/davecgh/go-spew/spew"
 	htmlutil "html"
+	"io/ioutil"
+	"math"
 	"regexp"
 
 	"code.google.com/p/go.net/html"
@@ -42,41 +43,12 @@ func (e *TextExtractor) Setup(config interface{}) error {
 }
 
 func (e *TextExtractor) Extract(doc document.Document) (interface{}, error) {
-	var tmp Blocks
 	blocks := e.parseNode(doc.Body.Node())
 
-	// Attempt to remove non-content blocks
-	// Based on the Goose library - https://github.com/GravityLabs/goose
-	for i := 0; i < len(blocks); i++ {
-		var tb TextBlock
-		var bb Blocks
+	// Remove non-content blocks
+	blocks = e.getBestBlocks(blocks)
 
-		if blocks[i].TagType == StartTag && blocks[i].EndBlock != nil {
-			// Create text block
-			lastJ := 0
-			for j := i; j < len(blocks) && blocks[i].EndBlock != blocks[j]; j++ {
-				tb.AddText(blocks[j].Data, blocks[j].Tag == "a")
-				bb = append(bb, blocks[j])
-				lastJ = j
-			}
-
-			i = lastJ
-		} else {
-			tb.AddText(blocks[i].Data, blocks[i].Tag == "a")
-			bb = append(bb, blocks[i])
-		}
-
-		tb.Flush()
-		if stopWordCount(tb.Data) > 2 && tb.LinkDensity < 1 {
-			tmp = append(tmp, bb...)
-		}
-	}
-	// for _, block := range blocks {
-
-	// }
-
-	// spew.Dump(blocks.String(false))
-	fmt.Println(blocks.String(true))
+	ioutil.WriteFile("test.html", []byte(blocks.String(true)), 0644)
 
 	// return blocks.String(e.format == "raw"), nil
 	return "", nil
@@ -85,121 +57,85 @@ func (e *TextExtractor) Extract(doc document.Document) (interface{}, error) {
 func (e *TextExtractor) parseNode(n *html.Node) Blocks {
 	blocks := Blocks{}
 
-	var f func(*html.Node)
-	f = func(n *html.Node) {
-		isLink := false
-		addEndTag := false
-
-		if n.Type == html.ElementNode {
-			switch n.Data {
-			case "body":
-			case "h1", "h2", "h3", "h4", "h5", "h6":
-				blocks = append(blocks, &Block{
-					Tag:     n.Data,
-					TagType: ElementTag,
-					Data:    e.parseChildNodes(n).String(false),
-				})
-				return
-			case "img":
-				blocks = append(blocks, e.extractImage(n))
-				return
-			case "ol", "ul":
-				blocks = append(blocks, e.extractList(n)...)
-				return
-			case "br":
-				blocks = append(blocks, &Block{
-					TagType: NewLineTag,
-				})
-			case "table", "tbody", "tfoot", "tr", "th", "td":
-				buf := &bytes.Buffer{}
-				html.Render(buf, n)
-
-				blocks = append(blocks, &Block{
-					TagType: RawTag,
-					Data:    buf.String(),
-				})
-				return
-			default:
-				data := e.parseChildNodes(n).String(false)
-				if data != "" {
-					blocks = append(blocks, &Block{
-						TagType: TextTag,
-						Data:    data,
-					})
-				}
-				return
-			case "a":
-				isLink = true
-				addEndTag = true
-				blocks = blocks.AddStartBlock(&Block{
-					Tag:     n.Data,
-					TagType: StartTag,
-					Attrs:   nodeAttrs(n, "href"),
-				})
-			// Block elements
-			case "article", "aside", "blockquote", "dd", "div", "dl", "fieldset",
-				"figcaption", "figure", "footer", "form", "header", "hgroup",
-				"output", "p", "pre", "section":
-				// Attempt to check if the element only contains one non-empty child
-				count := 0
-				for c := n.FirstChild; c != nil; c = c.NextSibling {
-					if c.Data != "" {
-						count++
-					}
-				}
-
-				if count > 0 {
-					addEndTag = true
-					blocks = blocks.AddStartBlock(&Block{
-						Tag:     n.Data,
-						TagType: StartTag,
-					})
-				}
-
+	if n.Type == html.ElementNode {
+		switch n.Data {
+		case "body":
+			return e.parseChildNodes(nil, n)
+		case "h1", "h2", "h3", "h4", "h5", "h6":
+			b := &Block{
+				Tag:  n.Data,
+				Type: ElementBlock,
 			}
-		} else if n.Type == html.TextNode {
-			var re *regexp.Regexp
+			b.Children.Add(&Block{
+				Type:   TextBlock,
+				Parent: b,
+				Data:   e.parseChildNodes(nil, n).String(false),
+			})
+			return blocks.Add(b)
+		case "img":
+			return blocks.Add(e.extractImage(n))
+		case "ol", "ul":
+			return blocks.Add(e.extractList(n)...)
+		case "br":
+			return blocks.Add(&Block{
+				Type: NewLineBlock,
+			})
+		case "a":
+			b := &Block{
+				Tag:   n.Data,
+				Type:  ElementBlock,
+				Attrs: nodeAttrs(n, "href"),
+			}
+			b.Children = e.parseChildNodes(b, n)
+			return blocks.Add(b)
+		case "article", "aside", "blockquote", "dd", "div", "dl", "fieldset",
+			"figcaption", "figure", "footer", "form", "header", "hgroup",
+			"output", "p", "pre", "section", "table", "tbody", "tfoot", "tr", "th", "td":
+			block := &Block{
+				Tag:  n.Data,
+				Type: ElementBlock,
+			}
+			block.Children = e.parseChildNodes(block, n)
 
-			data := n.Data
-			re = regexp.MustCompile("[\t\r\n]+")
-			data = re.ReplaceAllString(data, "")
-			re = regexp.MustCompile(" {2,}")
-			data = re.ReplaceAllString(data, " ")
-			data = htmlutil.EscapeString(data)
-
+			return blocks.Add(block)
+		default:
+			data := e.parseChildNodes(nil, n).String(false)
 			if data != "" {
-				blocks = append(blocks, &Block{
-					TagType: TextTag,
-					Data:    data,
+				return blocks.Add(&Block{
+					Type: TextBlock,
+					Data: data,
 				})
 			}
 		}
+	} else if n.Type == html.TextNode {
+		var re *regexp.Regexp
 
-		for c := n.FirstChild; c != nil; c = c.NextSibling {
-			f(c)
-		}
-
-		if isLink {
-			isLink = false
-		}
-		if addEndTag {
-			blocks = blocks.AddEndBlock(&Block{
-				Tag:     n.Data,
-				TagType: EndTag,
+		data := n.Data
+		re = regexp.MustCompile("[\t\r\n]+")
+		data = re.ReplaceAllString(data, "")
+		re = regexp.MustCompile(" {2,}")
+		data = re.ReplaceAllString(data, " ")
+		data = htmlutil.EscapeString(data)
+		re = regexp.MustCompile("^[\t\n\f\r ]+$")
+		if !re.MatchString(data) {
+			return blocks.Add(&Block{
+				Type: TextBlock,
+				Data: data,
 			})
 		}
 	}
 
-	f(n)
-
 	return blocks
 }
 
-func (e *TextExtractor) parseChildNodes(n *html.Node) Blocks {
+func (e *TextExtractor) parseChildNodes(parent *Block, n *html.Node) Blocks {
 	if n.Type == html.ElementNode {
 		blocks := Blocks{}
 		for c := n.FirstChild; c != nil; c = c.NextSibling {
-			blocks = append(blocks, e.parseNode(c)...)
+			for _, b := range e.parseNode(c) {
+				b.Parent = parent
+				blocks = append(blocks, b)
+			}
 		}
 		return blocks
 	} else {
@@ -219,37 +155,200 @@ func (e *TextExtractor) extractImage(n *html.Node) *Block {
 	}
 
 	return &Block{
-		Tag:     n.Data,
-		TagType: SelfClosingTag,
-		Attrs:   nodeAttrs(n, "src", "width", "height"),
+		Tag:   n.Data,
+		Type:  SelfClosingBlock,
+		Attrs: nodeAttrs(n, "src", "width", "height"),
 	}
 }
 
 func (e *TextExtractor) extractList(n *html.Node) Blocks {
 	blocks := Blocks{}
 
-	blocks = blocks.AddStartBlock(&Block{
-		Tag:     n.Data,
-		TagType: StartTag,
-	})
+	currBlock := &Block{
+		Tag:  n.Data,
+		Type: ElementBlock,
+	}
 
 	// Collect list items
 	for c := n.FirstChild; c != nil; c = c.NextSibling {
 		if c.Type == html.ElementNode {
-			blocks = append(blocks, &Block{
-				Tag:     "li",
-				TagType: ElementTag,
-				Data:    e.parseNode(c).String(false),
+			currBlock.Children = append(currBlock.Children, &Block{
+				Tag:  "li",
+				Type: ElementBlock,
+				Children: Blocks{
+					&Block{
+						Type: TextBlock,
+						Data: e.parseNode(c).String(false),
+					},
+				},
 			})
 		}
 	}
 
-	blocks = blocks.AddEndBlock(&Block{
-		Tag:     n.Data,
-		TagType: EndTag,
-	})
+	blocks = blocks.Add(currBlock)
 
 	return blocks
+}
+
+func (e *TextExtractor) extractTable(n *html.Node) Blocks {
+	blocks := Blocks{}
+
+	currBlock := &Block{
+		Tag:  n.Data,
+		Type: ElementBlock,
+	}
+
+	// Collect list items
+	for c := n.FirstChild; c != nil; c = c.NextSibling {
+		if c.Type == html.ElementNode {
+			currBlock.Children = append(currBlock.Children, &Block{
+				Tag:  "li",
+				Type: ElementBlock,
+				Children: Blocks{
+					&Block{
+						Type: TextBlock,
+						Data: e.parseNode(c).String(false),
+					},
+				},
+			})
+		}
+	}
+
+	blocks = blocks.Add(currBlock)
+
+	return blocks
+}
+
+// Algorithm based on the Goose library
+// https://github.com/gravitylabs/goose/
+func (e *TextExtractor) getBestBlocks(blocks Blocks) Blocks {
+	var textBlocks = Blocks{}
+	var parentBlocks = Blocks{}
+
+	startingBoost := float64(0)
+	i := 0
+
+	// Get a list of blocks which contain text.
+	var f func(*Block)
+	f = func(block *Block) {
+		if block.Type == ElementBlock {
+			switch block.Tag {
+			case "article", "aside", "blockquote", "dd", "div", "dl", "fieldset",
+				"figcaption", "figure", "footer", "form", "header", "hgroup",
+				"output", "p", "pre", "section":
+				if block.TextStats.NumStopWords > 2 && block.TextStats.LinkDensity <= 1 {
+					textBlocks = append(textBlocks, block)
+				}
+
+				for _, c := range block.Children {
+					f(c)
+				}
+			}
+		}
+	}
+
+	for _, block := range blocks {
+		f(block)
+	}
+
+	bottomBlocks := float64(len(textBlocks)) * 0.25
+
+	for _, block := range textBlocks {
+		boostScore := float64(0)
+		if isBlockBoostable(block) {
+			if i >= 0 {
+				boostScore = ((1.0 / startingBoost) * 50)
+				startingBoost += 1
+			}
+		}
+		if len(textBlocks) > 15 {
+			if float64(len(textBlocks)-1) <= bottomBlocks {
+				booster := bottomBlocks - float64(len(textBlocks)-i)
+				boostScore = -math.Pow(booster, 2)
+				if math.Abs(boostScore) > 40 {
+					boostScore = 5
+				}
+			}
+
+			upscore := block.TextStats.NumStopWords + int(boostScore)
+			if block != nil {
+				block.Score += upscore
+				if !parentBlocks.Contains(block) {
+					parentBlocks = append(parentBlocks, block)
+				}
+
+				if block.Parent != nil {
+					block.Parent.Score += upscore / 2
+					if !parentBlocks.Contains(block.Parent) {
+						parentBlocks = append(parentBlocks, block.Parent)
+					}
+
+					if block.Parent.Parent != nil {
+						block.Parent.Score += upscore / 4
+						if !parentBlocks.Contains(block.Parent.Parent) {
+							parentBlocks = append(parentBlocks, block.Parent.Parent)
+						}
+					}
+				}
+
+			}
+
+			i++
+		}
+	}
+
+	// Find the best block
+	var bestBlock *Block
+
+	for _, block := range parentBlocks {
+		spew.Dump(block.Score)
+		if bestBlock == nil {
+			bestBlock = block
+		}
+		if block.Score >= bestBlock.Score {
+			bestBlock = block
+		}
+	}
+
+	if bestBlock == nil {
+		return blocks
+	} else {
+		return Blocks{bestBlock}
+	}
+}
+
+func isBlockBoostable(b *Block) bool {
+	const MinStopWords int = 5
+	const MaxSteps int = 3
+
+	var steps int
+
+	if b.Parent == nil {
+		return false
+	}
+
+	for _, s := range b.Parent.Children {
+		if s == b {
+			return false
+		}
+
+		switch s.Tag {
+		case "article", "aside", "blockquote", "dd", "div", "dl", "fieldset",
+			"figcaption", "figure", "footer", "form", "header", "hgroup",
+			"output", "p", "pre", "section":
+
+			if steps >= MaxSteps {
+				return false
+			}
+			if s.TextStats.NumStopWords > MinStopWords {
+				return true
+			}
+
+			steps++
+		}
+	}
+
+	return false
 }
 
 func init() {
