@@ -277,7 +277,7 @@ func TestFetchMockedServer(t *testing.T) {
 							So(res.PageType, ShouldEqual, "text")
 						})
 						Convey("The result should be equal to the expected value", func() {
-							So(res.Content.(map[string]interface{})["title"], ShouldEqual, "Sample blog post")
+							So(res.Content.(map[string]interface{})["title"], ShouldEqual, "Sample blog post\nAnother blog post\nNew feature")
 						})
 					})
 

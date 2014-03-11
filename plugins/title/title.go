@@ -78,6 +78,10 @@ func (e *TitleExtractor) Extract(doc document.Document) (interface{}, error) {
 		}
 	}
 
+	if len(titles) > 1 {
+		return titles[0], nil
+	}
+
 	return doc.Title, nil
 }
 

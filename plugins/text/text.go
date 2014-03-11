@@ -5,7 +5,6 @@ import (
 	. "github.com/dancannon/gofetch/plugins"
 	"github.com/davecgh/go-spew/spew"
 	htmlutil "html"
-	"io/ioutil"
 	"math"
 	"regexp"
 
@@ -48,10 +47,7 @@ func (e *TextExtractor) Extract(doc document.Document) (interface{}, error) {
 	// Remove non-content blocks
 	blocks = e.getBestBlocks(blocks)
 
-	ioutil.WriteFile("test.html", []byte(blocks.String(true)), 0644)
-
-	// return blocks.String(e.format == "raw"), nil
-	return "", nil
+	return blocks.String(e.format == "raw"), nil
 }
 
 func (e *TextExtractor) parseNode(n *html.Node) Blocks {

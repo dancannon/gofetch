@@ -15,9 +15,12 @@ func SelectionToString(selection *goquery.Selection) string {
 	var buf bytes.Buffer
 
 	// Slightly optimized vs calling Each(): no single selection object created
-	for _, n := range selection.Nodes {
+	for i, n := range selection.Nodes {
 		buf.WriteString(GetNodeText(n))
-		buf.WriteString("\n")
+
+		if i < len(selection.Nodes)-1 {
+			buf.WriteString("\n")
+		}
 	}
 	return buf.String()
 }

@@ -75,7 +75,7 @@ func (blocks Blocks) htmlString(prefix string) string {
 		case NewLineBlock:
 			buf.WriteString("<br />")
 		case ElementBlock:
-			buf.WriteString(fmt.Sprintf("<%s%s>%s</%s>\n", block.Tag, block.AttrString(), block.Children.htmlString(prefix+"\t"), block.Tag))
+			buf.WriteString(fmt.Sprintf("<%s%s>%s</%s>", block.Tag, block.AttrString(), block.Children.htmlString(prefix+"\t"), block.Tag))
 		case TextBlock, RawBlock:
 			buf.WriteString(block.Data)
 		}

@@ -1,9 +1,11 @@
 package selector_text
 
 import (
+	"bytes"
 	"github.com/dancannon/gofetch/document"
 	. "github.com/dancannon/gofetch/plugins"
 	. "github.com/dancannon/gofetch/plugins/text"
+	"runtime"
 
 	"errors"
 	"fmt"
@@ -12,6 +14,7 @@ import (
 
 type SelectorTextExtractor struct {
 	selector      string
+	restype       string
 	textextractor *TextExtractor
 }
 
@@ -24,6 +27,9 @@ func (e *SelectorTextExtractor) Setup(config interface{}) error {
 	} else {
 		e.selector = selector.(string)
 	}
+	if restype, ok := params["restype"]; ok {
+		e.restype = restype.(string)
+	}
 
 	// Setup text SelectorTextExtractor
 	e.textextractor = &TextExtractor{}
@@ -35,7 +41,21 @@ func (e *SelectorTextExtractor) Setup(config interface{}) error {
 	return nil
 }
 
-func (e *SelectorTextExtractor) Extract(doc document.Document) (interface{}, error) {
+func (e *SelectorTextExtractor) Extract(doc document.Document) (value interface{}, err error) {
+	// GoQuery panics so we need to catch the errors
+	defer func() {
+		if r := recover(); r != nil {
+			if _, ok := r.(runtime.Error); ok {
+				panic(r)
+			}
+			if v, ok := r.(string); ok {
+				err = errors.New(v)
+			} else {
+				err = r.(error)
+			}
+		}
+	}()
+
 	qdoc := goquery.NewDocumentFromNode(doc.Body.Node())
 
 	n := qdoc.Find(e.selector)
@@ -43,11 +63,49 @@ func (e *SelectorTextExtractor) Extract(doc document.Document) (interface{}, err
 		return nil, errors.New(fmt.Sprintf("Selector '%s' not found", e.selector))
 	}
 
-	// Create a new document using the selected node
-	doc.Body = (*document.HtmlNode)(n.Get(0))
+	switch e.restype {
+	case "first":
+		doc.Body = (*document.HtmlNode)(n.Get(0))
+		value, err = e.textextractor.Extract(doc)
+		if err != nil {
+			return
+		}
+	case "all":
+		s := []interface{}{}
+		var v interface{}
 
-	// Run the new document through the text selector
-	return e.textextractor.Extract(doc)
+		for i := 0; i < n.Length(); i++ {
+			doc.Body = (*document.HtmlNode)(n.Get(i))
+			v, err = e.textextractor.Extract(doc)
+			if err != nil {
+				return
+			}
+			s = append(s, v)
+		}
+		value = s
+	case "merge":
+		fallthrough
+	default:
+		buf := bytes.Buffer{}
+
+		var v interface{}
+		for i, _ := range n.Nodes {
+			doc.Body = (*document.HtmlNode)(n.Nodes[i])
+			v, err = e.textextractor.Extract(doc)
+			if err != nil {
+				return
+			}
+
+			buf.WriteString(v.(string))
+			if i < len(n.Nodes)-1 {
+				// buf.WriteString("\n")
+			}
+
+		}
+
+		value = buf.String()
+	}
+	return
 }
 
 func init() {

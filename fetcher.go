@@ -351,8 +351,6 @@ func validateResultValues(pagetype string, values interface{}, typValues interfa
 				// Check that the value has the node if it is required
 				if required, ok := v["required"].(bool); ok && required {
 					if _, ok := valuesM[k]; !ok {
-
-						spew.Dump(values, pagetype, k)
 						return fmt.Errorf("The type %s requires the field %s", pagetype, k)
 					}
 				}

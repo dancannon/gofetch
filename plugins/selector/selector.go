@@ -91,7 +91,7 @@ func (e *SelectorExtractor) Extract(doc document.Document) (res interface{}, err
 		}
 		value, _ = n.First().Attr(e.attribute)
 	}
-	fmt.Println(value)
+
 	return value, nil
 }
 
