@@ -1,11 +1,15 @@
 package js
 
 import (
+	"errors"
 	"fmt"
 	"github.com/dancannon/gofetch/sandbox"
 	"github.com/robertkrimen/otto"
 	_ "github.com/robertkrimen/otto/underscore"
+	"time"
 )
+
+var Halt = errors.New("Halt")
 
 func getValue(jsb *JsSandbox, call otto.FunctionCall) otto.Value {
 	if jsb.msg == nil {
@@ -64,7 +68,6 @@ type JsSandbox struct {
 	or     *otto.Otto
 	msg    *sandbox.SandboxMessage
 	script string
-	err    error
 }
 
 func NewSandbox(conf sandbox.SandboxConfig) (sandbox.Sandbox, error) {
@@ -79,7 +82,31 @@ func NewSandbox(conf sandbox.SandboxConfig) (sandbox.Sandbox, error) {
 	return jsb, nil
 }
 
-func (this *JsSandbox) Init() error {
+func (this *JsSandbox) Init() (err error) {
+	// Setup panic recovery
+	start := time.Now()
+	defer func() {
+		duration := time.Since(start)
+		if caught := recover(); caught != nil {
+			if caught == Halt {
+				err = fmt.Errorf("The code took to long! Stopping after: %v\n", duration)
+				return
+			} else {
+				err = fmt.Errorf("%v", caught)
+				return
+			}
+		}
+	}()
+
+	// Add timeout handler
+	this.or.Interrupt = make(chan func())
+	go func() {
+		time.Sleep(2 * time.Second) // Stop after two seconds
+		this.or.Interrupt <- func() {
+			panic(Halt)
+		}
+	}()
+
 	// Load internal functions
 	this.or.Set("getValue", func(call otto.FunctionCall) otto.Value {
 		return getValue(this, call)
@@ -92,9 +119,9 @@ func (this *JsSandbox) Init() error {
 	})
 
 	// Run script
-	var err error
 	_, err = this.or.Run(this.script)
-	this.err = err
+
+	this.or.Interrupt = nil
 
 	return err
 }
@@ -103,10 +130,37 @@ func (this *JsSandbox) Destroy() error {
 	return nil
 }
 
-func (this *JsSandbox) ProcessMessage(msg *sandbox.SandboxMessage) error {
+func (this *JsSandbox) ProcessMessage(msg *sandbox.SandboxMessage) (err error) {
+	// Setup panic recovery
+	start := time.Now()
+	defer func() {
+		duration := time.Since(start)
+		if caught := recover(); caught != nil {
+			if caught == Halt {
+				err = fmt.Errorf("The code took to long! Stopping after: %v\n", duration)
+				return
+			} else {
+				err = fmt.Errorf("%v", caught)
+				return
+			}
+		}
+	}()
+
+	// Add timeout handler
+	this.or.Interrupt = make(chan func())
+	go func() {
+		time.Sleep(2 * time.Second) // Stop after two seconds
+		this.or.Interrupt <- func() {
+			panic(Halt)
+		}
+	}()
+
 	this.msg = msg
-	_, err := this.or.Call("processMessage", nil)
+
+	_, err = this.or.Call("processMessage", nil)
+
 	this.msg = nil
+	this.or.Interrupt = nil
 
 	return err
 }

@@ -293,6 +293,59 @@ func TestGetValue(t *testing.T) {
 						})
 					})
 				})
+				Convey("And a script that contains an infinite loop", func() {
+					sbc := sandbox.SandboxConfig{
+						Script: `
+						while(true) {
+
+						}`,
+					}
+
+					Convey("When the sandbox is created", func() {
+						var err error
+						sb, err = NewSandbox(sbc)
+						Convey("An error was returned", func() {
+							So(err, ShouldNotBeNil)
+						})
+						err = sb.Init()
+						Convey("An error was returned", func() {
+							So(err, ShouldNotBeNil)
+						})
+					})
+				})
+				Convey("And a script that has a processMessage which contains an infinite loop", func() {
+					sbc := sandbox.SandboxConfig{
+						Script: `function processMessage() {
+							while(true) {
+
+							}
+						}`,
+					}
+
+					Convey("When the sandbox is created", func() {
+						var err error
+						sb, err = NewSandbox(sbc)
+						Convey("No error was returned", func() {
+							So(err, ShouldBeNil)
+						})
+						err = sb.Init()
+						Convey("No error was returned", func() {
+							So(err, ShouldBeNil)
+						})
+
+						Convey("And when a message is processed", func() {
+							msg := sandbox.SandboxMessage{
+								PageType: "pagetype",
+								Value:    "value",
+								Document: *doc,
+							}
+							err = sb.ProcessMessage(&msg)
+							Convey("An error was returned", func() {
+								So(err, ShouldNotBeNil)
+							})
+						})
+					})
+				})
 			})
 		})
 	})
