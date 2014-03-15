@@ -92,19 +92,15 @@ func (e *OEmbedExtractor) ExtractValues(doc document.Document) (interface{}, str
 	if e.endpoint != "" {
 		endpoint = e.endpoint
 	} else {
-		endpoint = fmt.Sprintf(e.endpointFormat, url.QueryEscape(doc.Url))
+		endpoint = fmt.Sprintf(e.endpointFormat, doc.URL.String())
 	}
 
 	// Resolve absolute endpoint url
-	hu, err := url.Parse(doc.Url)
-	if err != nil {
-		return nil, "", err
-	}
 	eu, err := url.Parse(endpoint)
 	if err != nil {
 		return nil, "", err
 	}
-	endpoint = hu.ResolveReference(eu).String()
+	endpoint = doc.URL.ResolveReference(eu).String()
 
 	response, err := http.Get(endpoint)
 	if err != nil {

@@ -44,7 +44,7 @@ func (e *UrlMapperExtractor) Extract(doc document.Document) (interface{}, error)
 		return nil, err
 	}
 
-	return re.ReplaceAllString(doc.Url, e.replacement), nil
+	return re.ReplaceAllString(doc.URL.String(), e.replacement), nil
 }
 
 func init() {

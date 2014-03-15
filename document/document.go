@@ -2,21 +2,27 @@ package document
 
 import (
 	"io"
+	"net/url"
 
 	"code.google.com/p/go.net/html"
 )
 
 type Document struct {
-	Url   string              `json:"url"`
+	URL   *url.URL            `json:"url"`
 	Title string              `json:"title"`
 	Meta  []map[string]string `json:"meta"`
 	Doc   *HtmlNode           `json:"doc"`
 	Body  *HtmlNode           `json:"body"`
 }
 
-func NewDocument(url string, r io.Reader) (*Document, error) {
+func NewDocument(rawurl string, r io.Reader) (*Document, error) {
+	u, err := url.Parse(rawurl)
+	if err != nil {
+		return nil, err
+	}
+
 	doc := &Document{
-		Url:  url,
+		URL:  u,
 		Meta: []map[string]string{},
 	}
 

@@ -118,16 +118,10 @@ func (f *Fetcher) parseDocument(doc *document.Document) (Result, error) {
 	cleanDocument(doc)
 
 	res := Result{
-		Url:      doc.Url,
+		Url:      doc.URL.String(),
 		PageType: "unknown",
 	}
 	res.Content = make(map[string]interface{})
-
-	// Parse the request URL
-	u, err := neturl.Parse(doc.Url)
-	if err != nil {
-		return Result{}, err
-	}
 
 	// Iterate through all registered rules and find one that can be used
 	for _, rule := range f.Config.Rules {
@@ -137,7 +131,7 @@ func (f *Fetcher) parseDocument(doc *document.Document) (Result, error) {
 
 			// Check url against the url regular expression
 			re = regexp.MustCompile(rule.UrlPattern)
-			if !re.MatchString(u.String()) {
+			if !re.MatchString(doc.URL.String()) {
 				continue
 			}
 		} else {
@@ -146,7 +140,7 @@ func (f *Fetcher) parseDocument(doc *document.Document) (Result, error) {
 			var re *regexp.Regexp
 			// Clean host
 			re = regexp.MustCompile(".*?://")
-			host := re.ReplaceAllString(strings.TrimLeft(u.Host, "www."), "")
+			host := re.ReplaceAllString(strings.TrimLeft(doc.URL.Host, "www."), "")
 			ruleHost := re.ReplaceAllString(strings.TrimLeft(rule.Host, "www."), "")
 
 			// Check host
@@ -156,7 +150,7 @@ func (f *Fetcher) parseDocument(doc *document.Document) (Result, error) {
 
 			// Check path against the path regular expression
 			re = regexp.MustCompile(rule.PathPattern)
-			if !re.MatchString(u.RequestURI()) {
+			if !re.MatchString(doc.URL.RequestURI()) {
 				continue
 			}
 		}

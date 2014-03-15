@@ -20,16 +20,16 @@ func getValue(jsb *JsSandbox, call otto.FunctionCall) otto.Value {
 		result, _ = jsb.or.ToValue(jsb.msg.PageType)
 	case "Value":
 		result, _ = jsb.or.ToValue(jsb.msg.Value)
-	case "Document.Url":
-		result, _ = jsb.or.ToValue(jsb.msg.Document.Url)
+	case "Document.URL":
+		result, _ = jsb.or.ToValue(jsb.msg.Document.URL.String())
 	case "Document.Title":
 		result, _ = jsb.or.ToValue(jsb.msg.Document.Title)
 	case "Document.Meta":
 		result, _ = jsb.or.ToValue(jsb.msg.Document.Meta)
 	case "Document.Doc":
-		result, _ = jsb.or.ToValue(jsb.msg.Document.Doc)
+		result, _ = jsb.or.ToValue(*jsb.msg.Document.Doc)
 	case "Document.Body":
-		result, _ = jsb.or.ToValue(jsb.msg.Document.Body)
+		result, _ = jsb.or.ToValue(*jsb.msg.Document.Body)
 	default:
 		result = otto.UndefinedValue()
 	}

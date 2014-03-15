@@ -199,15 +199,16 @@ func TestGetValue(t *testing.T) {
 				sbc := sandbox.SandboxConfig{
 					Script: `function processMessage() {
 							setValue({
-								"url": getValue('Document.Url'),
-								"title": getValue('Document.Title'),
 								"meta": getValue('Document.Meta'),
-								"doc": getValue('Document.Title') !== null,
-								"body": getValue('Document.Title') !== null,
+								"doc": getValue('Document.Doc') !== null,
+								"body": getValue('Document.Body') !== null,
+								"url": getValue('Document.URL'),
+								"title": getValue('Document.Title'),
 							});
 
 							return 0;
-						}`,
+						}
+						`,
 				}
 
 				Convey("When the sandbox is created", func() {

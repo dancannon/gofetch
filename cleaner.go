@@ -38,15 +38,11 @@ func cleanNode(n *html.Node, d *document.Document) {
 					}
 				} else if a.Key == "href" || a.Key == "src" {
 					// Attempt to fix URLs
-					urlb, err := url.Parse(d.Url)
-					if err != nil {
-						continue
-					}
 					urlr, err := url.Parse(a.Val)
 					if err != nil {
 						continue
 					}
-					a.Val = urlb.ResolveReference(urlr).String()
+					a.Val = d.URL.ResolveReference(urlr).String()
 				}
 
 				tmpAttrs = append(tmpAttrs, a)
