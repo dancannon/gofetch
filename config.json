@@ -7,7 +7,7 @@
     "types": [{
         "id": "unknown",
         "allow_extra": true,
-        "values": {}
+        "values": null
     }, {
         "id": "raw",
         "allow_extra": false,

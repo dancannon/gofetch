@@ -326,7 +326,7 @@ func (f *Fetcher) validateResult(r Result) error {
 
 func validateResultValues(pagetype string, values interface{}, typValues interface{}, allowExtra bool) error {
 	// Check that both values have the same type
-	if reflect.TypeOf(values) != reflect.TypeOf(typValues) {
+	if typValues != nil && reflect.TypeOf(values) != reflect.TypeOf(typValues) {
 		return fmt.Errorf("The result is not of the correct type")
 	}
 

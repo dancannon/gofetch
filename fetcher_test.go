@@ -380,21 +380,6 @@ func TestValidation(t *testing.T) {
 		Convey("Given a new fetcher instance", func() {
 			fetcher = NewFetcher(conf)
 
-			Convey("and a nil result", func() {
-				result = Result{
-					PageType: "unknown",
-					Content:  nil,
-				}
-
-				Convey("When the the input is validated", func() {
-					err := fetcher.validateResult(result)
-
-					Convey("An error was returned", func() {
-						So(err, ShouldNotBeNil)
-						So(err.Error(), ShouldEqual, "The result is not of the correct type")
-					})
-				})
-			})
 			Convey("and an empty map", func() {
 				result = Result{
 					PageType: "unknown",

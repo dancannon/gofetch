@@ -3,7 +3,6 @@ package text
 import (
 	"github.com/dancannon/gofetch/document"
 	. "github.com/dancannon/gofetch/plugins"
-	"github.com/davecgh/go-spew/spew"
 	htmlutil "html"
 	"math"
 	"regexp"
@@ -297,7 +296,6 @@ func (e *TextExtractor) getBestBlocks(blocks Blocks) Blocks {
 	var bestBlock *Block
 
 	for _, block := range parentBlocks {
-		spew.Dump(block.Score)
 		if bestBlock == nil {
 			bestBlock = block
 		}
