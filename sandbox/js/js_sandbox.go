@@ -5,61 +5,42 @@ import (
 	"fmt"
 	"github.com/dancannon/gofetch/sandbox"
 	"github.com/robertkrimen/otto"
-	_ "github.com/robertkrimen/otto/underscore"
+	// _ "github.com/robertkrimen/otto/underscore"
 	"time"
 )
 
 var Halt = errors.New("Halt")
 
 func getValue(jsb *JsSandbox, call otto.FunctionCall) otto.Value {
-	if jsb.msg == nil {
-		result, _ := jsb.or.ToValue(1)
-		return result
+	if jsb.msg != nil {
+		value, _ := jsb.or.ToValue(jsb.msg.Value)
+		return value
 	}
 
-	name, _ := call.Argument(0).ToString()
-	var result otto.Value
-	switch name {
-	case "PageType":
-		result, _ = jsb.or.ToValue(jsb.msg.PageType)
-	case "Value":
-		result, _ = jsb.or.ToValue(jsb.msg.Value)
-	case "Document.URL":
-		result, _ = jsb.or.ToValue(jsb.msg.Document.URL.String())
-	case "Document.Title":
-		result, _ = jsb.or.ToValue(jsb.msg.Document.Title)
-	case "Document.Meta":
-		result, _ = jsb.or.ToValue(jsb.msg.Document.Meta)
-	case "Document.Doc":
-		result, _ = jsb.or.ToValue(*jsb.msg.Document.Doc)
-	case "Document.Body":
-		result, _ = jsb.or.ToValue(*jsb.msg.Document.Body)
-	default:
-		result = otto.UndefinedValue()
+	return otto.UndefinedValue()
+}
+func setValue(jsb *JsSandbox, call otto.FunctionCall) otto.Value {
+	if jsb.msg != nil {
+		value, _ := call.Argument(0).Export()
+		jsb.msg.Value = value
 	}
 
-	return result
+	return otto.UndefinedValue()
 }
 
-func setValue(jsb *JsSandbox, call otto.FunctionCall) otto.Value {
-	if jsb.msg == nil {
-		result, _ := jsb.or.ToValue(1)
-		return result
+func getPageType(jsb *JsSandbox, call otto.FunctionCall) otto.Value {
+	if jsb.msg != nil {
+		value, _ := jsb.or.ToValue(jsb.msg.PageType)
+		return value
 	}
-
-	value, _ := call.Argument(0).Export()
-	jsb.msg.Value = value
 
 	return otto.UndefinedValue()
 }
 
 func setPageType(jsb *JsSandbox, call otto.FunctionCall) otto.Value {
-	if jsb.msg == nil {
-		result, _ := jsb.or.ToValue(1)
-		return result
+	if jsb.msg != nil {
+		jsb.msg.PageType = call.Argument(0).String()
 	}
-
-	jsb.msg.PageType = call.Argument(0).String()
 
 	return otto.UndefinedValue()
 }
@@ -70,42 +51,17 @@ type JsSandbox struct {
 	script string
 }
 
-func NewSandbox(conf sandbox.SandboxConfig) (sandbox.Sandbox, error) {
+func NewSandbox(conf sandbox.SandboxConfig) sandbox.Sandbox {
 	jsb := new(JsSandbox)
-	jsb.or = otto.New()
 	jsb.script = conf.Script
-
-	if jsb.or == nil {
-		return nil, fmt.Errorf("Sandbox creation failed")
-	}
-
-	return jsb, nil
+	return jsb
 }
 
 func (this *JsSandbox) Init() (err error) {
-	// Setup panic recovery
-	start := time.Now()
-	defer func() {
-		duration := time.Since(start)
-		if caught := recover(); caught != nil {
-			if caught == Halt {
-				err = fmt.Errorf("The code took to long! Stopping after: %v\n", duration)
-				return
-			} else {
-				err = fmt.Errorf("%v", caught)
-				return
-			}
-		}
-	}()
+	this.or = otto.New()
 
-	// Add timeout handler
+	// Add timeout channel
 	this.or.Interrupt = make(chan func())
-	go func() {
-		time.Sleep(2 * time.Second) // Stop after two seconds
-		this.or.Interrupt <- func() {
-			panic(Halt)
-		}
-	}()
 
 	// Load internal functions
 	this.or.Set("getValue", func(call otto.FunctionCall) otto.Value {
@@ -114,19 +70,18 @@ func (this *JsSandbox) Init() (err error) {
 	this.or.Set("setValue", func(call otto.FunctionCall) otto.Value {
 		return setValue(this, call)
 	})
+	this.or.Set("getPageType", func(call otto.FunctionCall) otto.Value {
+		return getPageType(this, call)
+	})
 	this.or.Set("setPageType", func(call otto.FunctionCall) otto.Value {
 		return setPageType(this, call)
 	})
-
-	// Run script
-	_, err = this.or.Run(this.script)
-
-	this.or.Interrupt = nil
 
 	return err
 }
 
 func (this *JsSandbox) Destroy() error {
+	this.or.Interrupt = nil
 	return nil
 }
 
@@ -140,6 +95,7 @@ func (this *JsSandbox) ProcessMessage(msg *sandbox.SandboxMessage) (err error) {
 				err = fmt.Errorf("The code took to long! Stopping after: %v\n", duration)
 				return
 			} else {
+				panic(caught)
 				err = fmt.Errorf("%v", caught)
 				return
 			}
@@ -155,12 +111,14 @@ func (this *JsSandbox) ProcessMessage(msg *sandbox.SandboxMessage) (err error) {
 		}
 	}()
 
+	// Setup sandbox with message data
+	dv, _ := this.or.ToValue(msg.Document)
+	this.or.Set("document", dv)
 	this.msg = msg
 
-	_, err = this.or.Call("processMessage", nil)
+	// Run script
+	_, err = this.or.Run(this.script)
 
 	this.msg = nil
-	this.or.Interrupt = nil
-
 	return err
 }

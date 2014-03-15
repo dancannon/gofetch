@@ -30,7 +30,7 @@ func LoadConfig(path string) (Config, error) {
 	decoder := json.NewDecoder(file)
 	err = decoder.Decode(&config)
 	if err != nil {
-		return Config{}, fmt.Errorf("Error decoding config file: ", err)
+		return Config{}, fmt.Errorf("Error decoding config file: %s", err)
 	}
 
 	return config, nil

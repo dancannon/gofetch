@@ -3,6 +3,7 @@ package js
 import (
 	"github.com/dancannon/gofetch/document"
 	"github.com/dancannon/gofetch/sandbox"
+	"github.com/davecgh/go-spew/spew"
 	"os"
 	"testing"
 
@@ -15,53 +16,52 @@ func TestSandbox(t *testing.T) {
 	Convey("Subject: JavaScript sandbox", t, func() {
 		Convey("Given a valid script", func() {
 			sbc := sandbox.SandboxConfig{
-				Script: `function processMessage() {
+				Script: `
 					setPageType("unknown");
 					setValue("test");
-
-					return 0;
-				}`,
+				`,
 			}
 
-			Convey("When the sandbox is created", func() {
-				var err error
-				sb, err = NewSandbox(sbc)
-				Convey("No error was returned", func() {
-					So(err, ShouldBeNil)
-				})
-				err = sb.Init()
-				Convey("No error was returned", func() {
-					So(err, ShouldBeNil)
-				})
+			Convey("and an instance of a sandbox", func() {
+				sb = NewSandbox(sbc)
 
-				Convey("And when a message is processed", func() {
-					msg := sandbox.SandboxMessage{}
-					err = sb.ProcessMessage(&msg)
+				Convey("When the sandbox is initialized", func() {
+					err := sb.Init()
 
-					Convey("The result should be correct", func() {
-						So(msg.PageType, ShouldEqual, "unknown")
-						So(msg.Value, ShouldEqual, "test")
-					})
 					Convey("No error was returned", func() {
 						So(err, ShouldBeNil)
+					})
+
+					Convey("And when a message is processed", func() {
+						msg := sandbox.SandboxMessage{}
+						err = sb.ProcessMessage(&msg)
+
+						Convey("The result should be correct", func() {
+							So(msg.PageType, ShouldEqual, "unknown")
+							So(msg.Value, ShouldEqual, "test")
+						})
+						Convey("No error was returned", func() {
+							So(err, ShouldBeNil)
+						})
 					})
 				})
 			})
 		})
-		Convey("Given a script with no ProcessMessage function", func() {
+		Convey("Given a script with syntax errors", func() {
 			Convey("When the sandbox is created", func() {
-				Convey("An error was returned", func() {
-					sbc := sandbox.SandboxConfig{
-						Script: ``,
-					}
+				sbc := sandbox.SandboxConfig{
+					Script: `
+						setPageType("unknown");
+						setValue("test); // No closing quote
+					`,
+				}
 
-					Convey("When the sandbox is created", func() {
-						var err error
-						sb, err = NewSandbox(sbc)
-						Convey("No error was returned", func() {
-							So(err, ShouldBeNil)
-						})
-						err = sb.Init()
+				Convey("and an instance of a sandbox", func() {
+					sb = NewSandbox(sbc)
+
+					Convey("When the sandbox is initialized", func() {
+						err := sb.Init()
+
 						Convey("No error was returned", func() {
 							So(err, ShouldBeNil)
 						})
@@ -70,35 +70,9 @@ func TestSandbox(t *testing.T) {
 							msg := sandbox.SandboxMessage{}
 							err = sb.ProcessMessage(&msg)
 
-							Convey("An error was returned", func() {
+							Convey("Ab error was returned", func() {
 								So(err, ShouldNotBeNil)
 							})
-						})
-					})
-				})
-			})
-		})
-		Convey("Given a script with syntax errors", func() {
-			Convey("When the sandbox is created", func() {
-				Convey("An error was returned", func() {
-					sbc := sandbox.SandboxConfig{
-						Script: `function processMessage() {
-							setPageType("unknown");
-							setValue("test);
-
-							return 0;
-						}`,
-					}
-
-					Convey("When the sandbox is created", func() {
-						var err error
-						sb, err = NewSandbox(sbc)
-						Convey("An error was returned", func() {
-							So(err, ShouldNotBeNil)
-						})
-						err = sb.Init()
-						Convey("An error was returned", func() {
-							So(err, ShouldNotBeNil)
 						})
 					})
 				})
@@ -121,157 +95,19 @@ func TestGetValue(t *testing.T) {
 				t.Fatal(err.Error())
 			}
 
-			Convey("And a script that tests getValue('PageType')", func() {
+			Convey("And a script that tests getPageType()", func() {
 				sbc := sandbox.SandboxConfig{
-					Script: `function processMessage() {
-							setValue(getValue('PageType') === 'pagetype');
-
-							return 0;
-						}`,
+					Script: `
+						setValue(getPageType() === 'pagetype');
+					`,
 				}
 
-				Convey("When the sandbox is created", func() {
-					var err error
-					sb, err = NewSandbox(sbc)
-					Convey("No error was returned", func() {
-						So(err, ShouldBeNil)
-					})
-					err = sb.Init()
-					Convey("No error was returned", func() {
-						So(err, ShouldBeNil)
-					})
+				Convey("and an instance of a sandbox", func() {
+					sb = NewSandbox(sbc)
 
-					Convey("And when a message is processed", func() {
-						msg := sandbox.SandboxMessage{
-							PageType: "pagetype",
-							Value:    "value",
-							Document: *doc,
-						}
-						err = sb.ProcessMessage(&msg)
+					Convey("When the sandbox is initialized", func() {
+						err := sb.Init()
 
-						Convey("The result should be correct", func() {
-							So(msg.Value, ShouldEqual, true)
-						})
-						Convey("No error was returned", func() {
-							So(err, ShouldBeNil)
-						})
-					})
-				})
-			})
-			Convey("And a script that tests getValue('Value')", func() {
-				sbc := sandbox.SandboxConfig{
-					Script: `function processMessage() {
-							setValue(getValue('Value') === 'value');
-
-							return 0;
-						}`,
-				}
-
-				Convey("When the sandbox is created", func() {
-					var err error
-					sb, err = NewSandbox(sbc)
-					Convey("No error was returned", func() {
-						So(err, ShouldBeNil)
-					})
-					err = sb.Init()
-					Convey("No error was returned", func() {
-						So(err, ShouldBeNil)
-					})
-
-					Convey("And when a message is processed", func() {
-						msg := sandbox.SandboxMessage{
-							PageType: "pagetype",
-							Value:    "value",
-							Document: *doc,
-						}
-						err = sb.ProcessMessage(&msg)
-
-						Convey("The result should be correct", func() {
-							So(msg.Value, ShouldEqual, true)
-						})
-						Convey("No error was returned", func() {
-							So(err, ShouldBeNil)
-						})
-					})
-				})
-			})
-			Convey("And a script that tests getValue('Document.*')", func() {
-				sbc := sandbox.SandboxConfig{
-					Script: `function processMessage() {
-							setValue({
-								"meta": getValue('Document.Meta'),
-								"doc": getValue('Document.Doc') !== null,
-								"body": getValue('Document.Body') !== null,
-								"url": getValue('Document.URL'),
-								"title": getValue('Document.Title'),
-							});
-
-							return 0;
-						}
-						`,
-				}
-
-				Convey("When the sandbox is created", func() {
-					var err error
-					sb, err = NewSandbox(sbc)
-					Convey("No error was returned", func() {
-						So(err, ShouldBeNil)
-					})
-					err = sb.Init()
-					Convey("No error was returned", func() {
-						So(err, ShouldBeNil)
-					})
-
-					Convey("And when a message is processed", func() {
-						msg := sandbox.SandboxMessage{
-							PageType: "pagetype",
-							Value:    "value",
-							Document: *doc,
-						}
-						err = sb.ProcessMessage(&msg)
-
-						Convey("The result should be correct", func() {
-							So(msg.Value, ShouldResemble, map[string]interface{}{
-								"url":   "url",
-								"title": "Starter Template for Bootstrap",
-								"meta": []map[string]string{
-									map[string]string{
-										"charset": "utf-8",
-									},
-									map[string]string{
-										"name":    "description",
-										"content": "description",
-									},
-									map[string]string{
-										"name":    "author",
-										"content": "author",
-									},
-								},
-								"doc":  true,
-								"body": true,
-							})
-						})
-						Convey("No error was returned", func() {
-							So(err, ShouldBeNil)
-						})
-					})
-				})
-				Convey("And a script that tests getValue('unknown') is undefined", func() {
-					sbc := sandbox.SandboxConfig{
-						Script: `function processMessage() {
-							setValue(typeof getValue('unknown') === 'undefined');
-
-							return 0;
-						}`,
-					}
-
-					Convey("When the sandbox is created", func() {
-						var err error
-						sb, err = NewSandbox(sbc)
-						Convey("No error was returned", func() {
-							So(err, ShouldBeNil)
-						})
-						err = sb.Init()
 						Convey("No error was returned", func() {
 							So(err, ShouldBeNil)
 						})
@@ -293,42 +129,20 @@ func TestGetValue(t *testing.T) {
 						})
 					})
 				})
-				Convey("And a script that contains an infinite loop", func() {
-					sbc := sandbox.SandboxConfig{
-						Script: `
-						while(true) {
+			})
+			Convey("And a script that tests getValue()", func() {
+				sbc := sandbox.SandboxConfig{
+					Script: `
+						setValue(getValue() === 'value');
+					`,
+				}
 
-						}`,
-					}
+				Convey("and an instance of a sandbox", func() {
+					sb = NewSandbox(sbc)
 
-					Convey("When the sandbox is created", func() {
-						var err error
-						sb, err = NewSandbox(sbc)
-						Convey("An error was returned", func() {
-							So(err, ShouldNotBeNil)
-						})
-						err = sb.Init()
-						Convey("An error was returned", func() {
-							So(err, ShouldNotBeNil)
-						})
-					})
-				})
-				Convey("And a script that has a processMessage which contains an infinite loop", func() {
-					sbc := sandbox.SandboxConfig{
-						Script: `function processMessage() {
-							while(true) {
+					Convey("When the sandbox is initialized", func() {
+						err := sb.Init()
 
-							}
-						}`,
-					}
-
-					Convey("When the sandbox is created", func() {
-						var err error
-						sb, err = NewSandbox(sbc)
-						Convey("No error was returned", func() {
-							So(err, ShouldBeNil)
-						})
-						err = sb.Init()
 						Convey("No error was returned", func() {
 							So(err, ShouldBeNil)
 						})
@@ -340,7 +154,122 @@ func TestGetValue(t *testing.T) {
 								Document: *doc,
 							}
 							err = sb.ProcessMessage(&msg)
-							Convey("An error was returned", func() {
+
+							Convey("The result should be correct", func() {
+								So(msg.Value, ShouldEqual, true)
+							})
+							Convey("No error was returned", func() {
+								So(err, ShouldBeNil)
+							})
+						})
+					})
+				})
+			})
+			Convey("And a script that tests getValue('Document.*')", func() {
+				sbc := sandbox.SandboxConfig{
+					Script: `
+							setValue({
+								"meta": document.Meta,
+								"doc": document.Doc !== null,
+								"body": document.Body !== null,
+								"url": document.URL.String(),
+								"title": document.Title,
+							});
+						`,
+				}
+
+				Convey("and an instance of a sandbox", func() {
+					sb = NewSandbox(sbc)
+
+					Convey("When the sandbox is initialized", func() {
+						err := sb.Init()
+
+						Convey("No error was returned", func() {
+							So(err, ShouldBeNil)
+						})
+
+						Convey("And when a message is processed", func() {
+							msg := sandbox.SandboxMessage{
+								PageType: "pagetype",
+								Value:    "value",
+								Document: *doc,
+							}
+							err = sb.ProcessMessage(&msg)
+
+							Convey("The result should be correct", func() {
+								spew.Dump(msg.Value)
+								So(msg.Value, ShouldResemble, map[string]interface{}{
+									"url":   "url",
+									"title": "Starter Template for Bootstrap",
+									"meta": []map[string]string{
+										map[string]string{
+											"charset": "utf-8",
+										},
+										map[string]string{
+											"name":    "description",
+											"content": "description",
+										},
+										map[string]string{
+											"name":    "author",
+											"content": "author",
+										},
+									},
+									"doc":  true,
+									"body": true,
+								})
+							})
+							Convey("No error was returned", func() {
+								So(err, ShouldBeNil)
+							})
+						})
+					})
+				})
+			})
+		})
+	})
+}
+
+func TestInterrupt(t *testing.T) {
+	if testing.Short() {
+		t.Skip("skipping test in short mode.")
+	}
+
+	var sb sandbox.Sandbox
+
+	Convey("Subject: JavaScript sandbox", t, func() {
+		Convey("Given a valid document", func() {
+			f, err := os.Open("../../test/simple.html")
+			if err != nil {
+				t.Fatal(err.Error())
+			}
+			doc, err := document.NewDocument("url", f)
+			if err != nil {
+				t.Fatal(err.Error())
+			}
+
+			Convey("And a script that contains an infinite loop", func() {
+				sbc := sandbox.SandboxConfig{
+					Script: `
+						while(true) {
+
+						}
+					`,
+				}
+				Convey("and an instance of a sandbox", func() {
+					sb = NewSandbox(sbc)
+
+					Convey("When the sandbox is initialized", func() {
+						err := sb.Init()
+
+						Convey("No error was returned", func() {
+							So(err, ShouldBeNil)
+						})
+
+						Convey("And when a message is processed", func() {
+							msg := sandbox.SandboxMessage{}
+							err = sb.ProcessMessage(&msg)
+
+							Convey("Ab error was returned", func() {
 								So(err, ShouldNotBeNil)
 							})
 						})

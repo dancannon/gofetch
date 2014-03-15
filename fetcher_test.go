@@ -70,10 +70,14 @@ func init() {
 }
 
 func TestFetchRemoteUrl(t *testing.T) {
+	if testing.Short() {
+		t.Skip("skipping test in short mode.")
+	}
+
 	var fetcher *Fetcher
 
 	for _, tt := range remoteTests {
-		SkipConvey(fmt.Sprintf("Subject: Test fetch content from URL %s", tt.url), t, func() {
+		Convey(fmt.Sprintf("Subject: Test fetch content from URL %s", tt.url), t, func() {
 			Convey("Given a new fetcher instance", func() {
 				fetcher = NewFetcher(conf)
 
