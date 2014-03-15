@@ -16,26 +16,16 @@ func TestSetup(t *testing.T) {
 			Convey("With a valid script", func() {
 				e = &JavaScriptExtractor{}
 				err := e.Setup(map[string]interface{}{
-					"script": `function processMessage() {
+					"script": `
 						setPageType("unknown");
 						setValue("test");
 
 						return 0;
-					}`,
+					`,
 				})
 
 				Convey("No error is returned", func() {
 					So(err, ShouldBeNil)
-				})
-			})
-			Convey("With a script with a syntax error", func() {
-				e = &JavaScriptExtractor{}
-				err := e.Setup(map[string]interface{}{
-					"script": "function processMessage() {",
-				})
-
-				Convey("An error is returned", func() {
-					So(err, ShouldNotBeNil)
 				})
 			})
 			Convey("With no script", func() {
@@ -58,11 +48,9 @@ func TestExtract(t *testing.T) {
 			Convey("With a valid script", func() {
 				e = &JavaScriptExtractor{}
 				err := e.Setup(map[string]interface{}{
-					"script": `function processMessage() {
+					"script": `
 						setValue("test");
-
-						return 0;
-					}`,
+					`,
 				})
 				Convey("No error was returned", func() {
 					So(err, ShouldBeNil)
@@ -83,10 +71,10 @@ func TestExtract(t *testing.T) {
 					})
 				})
 			})
-			Convey("With a valid script without a processMessage function", func() {
+			Convey("With a script with a syntax error", func() {
 				e = &JavaScriptExtractor{}
 				err := e.Setup(map[string]interface{}{
-					"script": "",
+					"script": "setValue(\"test);",
 				})
 				Convey("No error was returned", func() {
 					So(err, ShouldBeNil)
@@ -116,12 +104,10 @@ func TestExtractValues(t *testing.T) {
 			Convey("With a valid script", func() {
 				e = &JavaScriptExtractor{}
 				err := e.Setup(map[string]interface{}{
-					"script": `function processMessage() {
-						setPageType("test");
+					"script": `
 						setValue("test");
-
-						return 0;
-					}`,
+						setPageType("type");
+					`,
 				})
 				Convey("No error was returned", func() {
 					So(err, ShouldBeNil)
@@ -138,15 +124,15 @@ func TestExtractValues(t *testing.T) {
 						So(err, ShouldBeNil)
 					})
 					Convey("The returned value was correct", func() {
-						So(typ, ShouldEqual, "test")
 						So(res, ShouldEqual, "test")
+						So(typ, ShouldEqual, "type")
 					})
 				})
 			})
-			Convey("With a valid script without a processMessage function", func() {
+			Convey("With a script with a syntax error", func() {
 				e = &JavaScriptExtractor{}
 				err := e.Setup(map[string]interface{}{
-					"script": "",
+					"script": "setValue(\"test);",
 				})
 				Convey("No error was returned", func() {
 					So(err, ShouldBeNil)

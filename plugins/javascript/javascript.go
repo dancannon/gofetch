@@ -31,11 +31,7 @@ func (e *JavaScriptExtractor) Setup(config interface{}) error {
 		e.sbc.ScriptType = "js"
 	}
 
-	var err error
-	e.sb, err = js.NewSandbox(e.sbc)
-	if err != nil {
-		return err
-	}
+	e.sb = js.NewSandbox(e.sbc)
 
 	return e.sb.Init()
 }

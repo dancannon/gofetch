@@ -237,41 +237,30 @@ func TestInterrupt(t *testing.T) {
 	var sb sandbox.Sandbox
 
 	Convey("Subject: JavaScript sandbox", t, func() {
-		Convey("Given a valid document", func() {
-			f, err := os.Open("../../test/simple.html")
-			if err != nil {
-				t.Fatal(err.Error())
-			}
-			doc, err := document.NewDocument("url", f)
-			if err != nil {
-				t.Fatal(err.Error())
-			}
-
-			Convey("And a script that contains an infinite loop", func() {
-				sbc := sandbox.SandboxConfig{
-					Script: `
+		Convey("Given a script that contains an infinite loop", func() {
+			sbc := sandbox.SandboxConfig{
+				Script: `
 						while(true) {
 
 						}
 					`,
-				}
-				Convey("and an instance of a sandbox", func() {
-					sb = NewSandbox(sbc)
+			}
+			Convey("and an instance of a sandbox", func() {
+				sb = NewSandbox(sbc)
 
-					Convey("When the sandbox is initialized", func() {
-						err := sb.Init()
+				Convey("When the sandbox is initialized", func() {
+					err := sb.Init()
 
-						Convey("No error was returned", func() {
-							So(err, ShouldBeNil)
-						})
+					Convey("No error was returned", func() {
+						So(err, ShouldBeNil)
+					})
 
-						Convey("And when a message is processed", func() {
-							msg := sandbox.SandboxMessage{}
-							err = sb.ProcessMessage(&msg)
+					Convey("And when a message is processed", func() {
+						msg := sandbox.SandboxMessage{}
+						err = sb.ProcessMessage(&msg)
 
-							Convey("Ab error was returned", func() {
-								So(err, ShouldNotBeNil)
-							})
+						Convey("Ab error was returned", func() {
+							So(err, ShouldNotBeNil)
 						})
 					})
 				})
