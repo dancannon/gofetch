@@ -64,7 +64,7 @@ func (e *TextExtractor) parseNode(n *html.Node) Blocks {
 			b.Children.Add(&Block{
 				Type:   TextBlock,
 				Parent: b,
-				Data:   e.parseChildNodes(nil, n).String(false),
+				Data:   e.parseChildNodes(nil, n).String(e.format == "raw"),
 			})
 			return blocks.Add(b)
 		case "img":
@@ -94,7 +94,7 @@ func (e *TextExtractor) parseNode(n *html.Node) Blocks {
 
 			return blocks.Add(block)
 		default:
-			data := e.parseChildNodes(nil, n).String(false)
+			data := e.parseChildNodes(nil, n).String(e.format == "raw")
 			if data != "" {
 				return blocks.Add(&Block{
 					Type: TextBlock,
@@ -173,7 +173,7 @@ func (e *TextExtractor) extractList(n *html.Node) Blocks {
 				Children: Blocks{
 					&Block{
 						Type: TextBlock,
-						Data: e.parseNode(c).String(false),
+						Data: e.parseNode(c).String(e.format == "raw"),
 					},
 				},
 			})
@@ -202,7 +202,7 @@ func (e *TextExtractor) extractTable(n *html.Node) Blocks {
 				Children: Blocks{
 					&Block{
 						Type: TextBlock,
-						Data: e.parseNode(c).String(false),
+						Data: e.parseNode(c).String(e.format == "raw"),
 					},
 				},
 			})
