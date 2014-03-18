@@ -54,10 +54,12 @@ func (blocks Blocks) String(html bool) string {
 				case "h6":
 					buf.WriteString(fmt.Sprintf("######%s\n", block.Data))
 				default:
-					buf.WriteString(fmt.Sprintf("%s\n", block.Children.String(html)))
+					if cs := block.Children.String(html); cs != "" {
+						buf.WriteString(fmt.Sprintf("%s\n", cs))
+					}
 				}
 			case TextBlock:
-				buf.WriteString(block.Data)
+				buf.WriteString(block.Data + " ")
 			}
 		}
 	}
@@ -75,9 +77,11 @@ func (blocks Blocks) htmlString(prefix string) string {
 		case NewLineBlock:
 			buf.WriteString("<br />")
 		case ElementBlock:
-			buf.WriteString(fmt.Sprintf("<%s%s>%s</%s>", block.Tag, block.AttrString(), block.Children.htmlString(prefix+"\t"), block.Tag))
+			if cs := block.Children.htmlString(prefix + "\t"); cs != "" {
+				buf.WriteString(fmt.Sprintf("<%s%s>%s</%s>", block.Tag, block.AttrString(), cs, block.Tag))
+			}
 		case TextBlock, RawBlock:
-			buf.WriteString(block.Data)
+			buf.WriteString(block.Data + " ")
 		}
 	}
 

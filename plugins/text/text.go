@@ -94,11 +94,11 @@ func (e *TextExtractor) parseNode(n *html.Node) Blocks {
 
 			return blocks.Add(block)
 		default:
-			data := e.parseChildNodes(nil, n).String(e.format == "raw")
-			if data != "" {
+			cs := e.parseChildNodes(nil, n).String(e.format == "raw")
+			if cs != "" {
 				return blocks.Add(&Block{
 					Type: TextBlock,
-					Data: data,
+					Data: cs,
 				})
 			}
 		}
@@ -167,45 +167,18 @@ func (e *TextExtractor) extractList(n *html.Node) Blocks {
 	// Collect list items
 	for c := n.FirstChild; c != nil; c = c.NextSibling {
 		if c.Type == html.ElementNode {
-			currBlock.Children = append(currBlock.Children, &Block{
-				Tag:  "li",
-				Type: ElementBlock,
-				Children: Blocks{
-					&Block{
-						Type: TextBlock,
-						Data: e.parseNode(c).String(e.format == "raw"),
+			if cs := e.parseNode(c).String(e.format == "raw"); cs != "" {
+				currBlock.Children = append(currBlock.Children, &Block{
+					Tag:  "li",
+					Type: ElementBlock,
+					Children: Blocks{
+						&Block{
+							Type: TextBlock,
+							Data: cs,
+						},
 					},
-				},
-			})
-		}
-	}
-
-	blocks = blocks.Add(currBlock)
-
-	return blocks
-}
-
-func (e *TextExtractor) extractTable(n *html.Node) Blocks {
-	blocks := Blocks{}
-
-	currBlock := &Block{
-		Tag:  n.Data,
-		Type: ElementBlock,
-	}
-
-	// Collect list items
-	for c := n.FirstChild; c != nil; c = c.NextSibling {
-		if c.Type == html.ElementNode {
-			currBlock.Children = append(currBlock.Children, &Block{
-				Tag:  "li",
-				Type: ElementBlock,
-				Children: Blocks{
-					&Block{
-						Type: TextBlock,
-						Data: e.parseNode(c).String(e.format == "raw"),
-					},
-				},
-			})
+				})
+			}
 		}
 	}
 
