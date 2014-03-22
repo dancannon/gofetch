@@ -67,12 +67,6 @@ func (e *OpengraphExtractor) ExtractValues(doc document.Document) (interface{}, 
 			"width":  "image:width",
 			"height": "image:height",
 		})
-	} else if strings.Contains(props["type"].(string), "article") {
-		pagetype = "text"
-		values = util.CreateMapFromProps(props, map[string]string{
-			"title": "title",
-			"text":  "description",
-		})
 	} else {
 		pagetype = "general"
 		values = util.CreateMapFromProps(props, map[string]string{

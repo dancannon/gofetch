@@ -6,6 +6,7 @@ import (
 	"github.com/dancannon/gofetch/document"
 	. "github.com/dancannon/gofetch/plugins"
 	"github.com/dancannon/gofetch/util"
+	"log"
 
 	"encoding/json"
 	"errors"
@@ -63,12 +64,12 @@ func (e *OEmbedExtractor) Supports(doc document.Document) bool {
 				// Check if type is a valid oembed discovery type
 				if typ == "application/json+oembed" {
 					e.format = "json"
-					e.endpoint = href
+					e.endpoint = href + "&maxwidth=480&maxheight=360"
 
 					return true
 				} else if typ == "text/xml+oembed" {
 					e.format = "xml"
-					e.endpoint = href
+					e.endpoint = href + "&maxwidth=480&maxheight=360"
 
 					return true
 				}
@@ -189,6 +190,13 @@ func (e *OEmbedExtractor) ExtractValues(doc document.Document) (interface{}, str
 		}
 
 		return res, "video", nil
+	case "rich":
+		res := util.CreateMapFromProps(props, map[string]string{
+			"title": "title",
+			"html":  "html",
+		})
+
+		return res, "rich", nil
 	}
 
 	return props, "unknown", nil
