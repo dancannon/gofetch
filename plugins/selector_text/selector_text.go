@@ -6,6 +6,7 @@ import (
 	. "github.com/dancannon/gofetch/plugins"
 	. "github.com/dancannon/gofetch/plugins/text"
 	"runtime"
+	"strings"
 
 	"errors"
 	"fmt"
@@ -56,7 +57,10 @@ func (e *SelectorTextExtractor) Extract(doc document.Document) (value interface{
 		}
 	}()
 
-	qdoc := goquery.NewDocumentFromNode(doc.Body.Node())
+	qdoc, err := goquery.NewDocumentFromReader(strings.NewReader(doc.Raw))
+	if err != nil {
+		return nil, err
+	}
 
 	n := qdoc.Find(e.selector)
 	if n.Length() == 0 {

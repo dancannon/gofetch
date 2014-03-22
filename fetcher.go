@@ -62,7 +62,7 @@ func (f *Fetcher) Fetch(url string) (Result, error) {
 
 	// Check the returned MIME type
 	if isContentTypeParsable(response) {
-		// If the page was HTML then parse the HTMl otherwise return the plain
+		// If the page was HTML then parse the HTML otherwise return the plain
 		// text
 		if isContentTypeHtml(response) {
 			doc, err := document.NewDocument(response.Request.URL.String(), response.Body)

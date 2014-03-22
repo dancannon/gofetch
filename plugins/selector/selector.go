@@ -1,10 +1,14 @@
 package selector
 
 import (
+	"bytes"
+	"code.google.com/p/go.net/html"
 	"github.com/dancannon/gofetch/document"
 	. "github.com/dancannon/gofetch/plugins"
 	"github.com/dancannon/gofetch/util"
+	"github.com/davecgh/go-spew/spew"
 	"runtime"
+	"strings"
 
 	"errors"
 	"fmt"
@@ -56,9 +60,14 @@ func (e *SelectorExtractor) Extract(doc document.Document) (res interface{}, err
 		}
 	}()
 
-	qdoc := goquery.NewDocumentFromNode(doc.Body.Node())
+	qdoc, err := goquery.NewDocumentFromReader(strings.NewReader(doc.Raw))
+	if err != nil {
+		return nil, err
+	}
 
 	n := qdoc.Find(e.selector)
+	spew.Config.MaxDepth = 2
+	spew.Dump(e.selector)
 	if n.Length() == 0 {
 		return nil, errors.New(fmt.Sprintf("Selector '%s' not found", e.selector))
 	}
@@ -74,6 +83,10 @@ func (e *SelectorExtractor) Extract(doc document.Document) (res interface{}, err
 			})
 		case "merge":
 			fallthrough
+		case "html":
+			w := &bytes.Buffer{}
+			html.Render(w, n.Nodes[0])
+			value = w.String()
 		default:
 			value = util.SelectionToString(n)
 		}

@@ -1,6 +1,7 @@
 package document
 
 import (
+	"bytes"
 	"io"
 	"net/url"
 
@@ -13,6 +14,7 @@ type Document struct {
 	Meta  []map[string]string `json:"meta"`
 	Doc   *HtmlNode           `json:"doc"`
 	Body  *HtmlNode           `json:"body"`
+	Raw   string              `json:"raw"`
 }
 
 func NewDocument(rawurl string, r io.Reader) (*Document, error) {
@@ -32,7 +34,14 @@ func NewDocument(rawurl string, r io.Reader) (*Document, error) {
 		return nil, err
 	}
 
-	doc.Doc = (*HtmlNode)(&(*n))
+	w := &bytes.Buffer{}
+	err = html.Render(w, n)
+	if err != nil {
+		return nil, err
+	}
+
+	doc.Raw = w.String()
+	doc.Doc = (*HtmlNode)(n)
 
 	// Process the document html to extract the title/meta tags
 	var processNode func(*html.Node)
