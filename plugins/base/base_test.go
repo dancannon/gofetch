@@ -1,13 +1,14 @@
 package base
 
 import (
-	"github.com/dancannon/gofetch/document"
 	"io"
 	"net/http"
 	"net/http/httptest"
 	"os"
 	"strings"
 	"testing"
+
+	"github.com/dancannon/gofetch/document"
 
 	. "github.com/smartystreets/goconvey/convey"
 )
@@ -53,7 +54,7 @@ func TestExtractValues(t *testing.T) {
 					}))
 
 					doc, err := document.NewDocument("", strings.NewReader(`
-						<html><head><link rel="alternate" type="application/json+oembed" href="`+ts.URL+`" /></head></html>
+						<html><head><link rel="alternate" type="application/json+oembed" href="`+ts.URL+`/?" /></head></html>
 					`))
 					if err != nil {
 						t.Fatal(err.Error())

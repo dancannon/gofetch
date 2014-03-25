@@ -2,16 +2,18 @@ package selector
 
 import (
 	"bytes"
+	"runtime"
+	"strings"
+
 	"code.google.com/p/go.net/html"
 	"github.com/dancannon/gofetch/document"
 	. "github.com/dancannon/gofetch/plugins"
 	"github.com/dancannon/gofetch/util"
 	"github.com/davecgh/go-spew/spew"
-	"runtime"
-	"strings"
 
 	"errors"
 	"fmt"
+
 	"github.com/PuerkitoBio/goquery"
 )
 
@@ -81,12 +83,12 @@ func (e *SelectorExtractor) Extract(doc document.Document) (res interface{}, err
 			value = n.Map(func(index int, n *goquery.Selection) string {
 				return util.SelectionToString(n)
 			})
-		case "merge":
-			fallthrough
 		case "html":
 			w := &bytes.Buffer{}
 			html.Render(w, n.Nodes[0])
 			value = w.String()
+		case "merge":
+			fallthrough
 		default:
 			value = util.SelectionToString(n)
 		}

@@ -1,9 +1,10 @@
 package opengraph
 
 import (
-	"github.com/dancannon/gofetch/document"
 	"os"
 	"testing"
+
+	"github.com/dancannon/gofetch/document"
 
 	. "github.com/smartystreets/goconvey/convey"
 )
@@ -87,8 +88,8 @@ func TestExtractValues(t *testing.T) {
 					Convey("No error was returned", func() {
 						So(err, ShouldBeNil)
 					})
-					Convey("The type should be 'text'", func() {
-						So(typ, ShouldEqual, "text")
+					Convey("The type should be 'general'", func() {
+						So(typ, ShouldEqual, "general")
 					})
 					Convey("The result should be valid", func() {
 						So(res, ShouldResemble, map[string]interface{}{

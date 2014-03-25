@@ -1,18 +1,17 @@
 package oembed
 
 import (
-	"code.google.com/p/go.net/html"
-	"github.com/clbanning/mxj"
-	"github.com/dancannon/gofetch/document"
-	. "github.com/dancannon/gofetch/plugins"
-	"github.com/dancannon/gofetch/util"
-	"log"
-
 	"encoding/json"
 	"errors"
 	"fmt"
 	"net/http"
 	"net/url"
+
+	"code.google.com/p/go.net/html"
+	"github.com/clbanning/mxj"
+	"github.com/dancannon/gofetch/document"
+	. "github.com/dancannon/gofetch/plugins"
+	"github.com/dancannon/gofetch/util"
 )
 
 type OEmbedExtractor struct {

@@ -1,9 +1,10 @@
 package selector_text
 
 import (
-	"github.com/dancannon/gofetch/document"
 	"os"
 	"testing"
+
+	"github.com/dancannon/gofetch/document"
 
 	. "github.com/smartystreets/goconvey/convey"
 )
@@ -67,7 +68,7 @@ func TestExtract(t *testing.T) {
 						So(err, ShouldBeNil)
 					})
 					Convey("The result should be valid", func() {
-						So(res, ShouldEqual, "<p>The official example template of creating a blog with Bootstrap.</p>")
+						So(res, ShouldEqual, "<p>The official example template of creating a blog with Bootstrap. </p>")
 					})
 				})
 			})
