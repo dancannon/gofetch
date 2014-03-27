@@ -1,10 +1,11 @@
 package gofetch
 
 import (
+	neturl "net/url"
+
 	"github.com/dancannon/gofetch/config"
 	"github.com/dancannon/gofetch/document"
 	"github.com/davecgh/go-spew/spew"
-	neturl "net/url"
 
 	. "github.com/dancannon/gofetch/plugins"
 	_ "github.com/dancannon/gofetch/plugins/base"
@@ -174,8 +175,6 @@ func (f *Fetcher) parseDocument(doc *document.Document) (Result, error) {
 	return res, nil
 }
 
-// Check the first level of values for an extractor, if one is found then immediately
-// return the result of the extractor.
 func (f *Fetcher) extractValue(values []interface{}, doc *document.Document) (value interface{}, pageType string, err error) {
 	for _, val := range values {
 		var props map[string]interface{}
@@ -185,15 +184,17 @@ func (f *Fetcher) extractValue(values []interface{}, doc *document.Document) (va
 		}
 		props = val.(map[string]interface{})
 
-		if typ, ok := props["type"]; ok {
-			switch typ {
-			case "extractor":
-				if v, t, supported, err := f.runExtractor(true, props, doc); err != nil {
-					return nil, "", err
-				} else if !supported {
-					continue
-				} else {
-					return v, t, nil
+		if name, ok := props["name"]; !ok || name == "" {
+			if typ, ok := props["type"]; ok {
+				switch typ {
+				case "extractor":
+					if v, t, supported, err := f.runExtractor(true, props, doc); err != nil {
+						return nil, "", err
+					} else if !supported {
+						continue
+					} else {
+						return v, t, nil
+					}
 				}
 			}
 		}

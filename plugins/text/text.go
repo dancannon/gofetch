@@ -1,11 +1,12 @@
 package text
 
 import (
-	"github.com/dancannon/gofetch/document"
-	. "github.com/dancannon/gofetch/plugins"
 	htmlutil "html"
 	"math"
 	"regexp"
+
+	"github.com/dancannon/gofetch/document"
+	. "github.com/dancannon/gofetch/plugins"
 
 	"code.google.com/p/go.net/html"
 )
@@ -41,7 +42,7 @@ func (e *TextExtractor) Setup(config interface{}) error {
 }
 
 func (e *TextExtractor) Extract(doc document.Document) (interface{}, error) {
-	blocks := e.parseNode(doc.Body.Node())
+	blocks := e.parseNode(doc.Body.Node(), doc)
 
 	// Remove non-content blocks
 	blocks = e.getBestBlocks(blocks)
@@ -49,13 +50,13 @@ func (e *TextExtractor) Extract(doc document.Document) (interface{}, error) {
 	return blocks.String(e.format == "raw"), nil
 }
 
-func (e *TextExtractor) parseNode(n *html.Node) Blocks {
+func (e *TextExtractor) parseNode(n *html.Node, d document.Document) Blocks {
 	blocks := Blocks{}
 
 	if n.Type == html.ElementNode {
 		switch n.Data {
 		case "body":
-			return e.parseChildNodes(nil, n)
+			return e.parseChildNodes(nil, n, d)
 		case "h1", "h2", "h3", "h4", "h5", "h6":
 			b := &Block{
 				Tag:  n.Data,
@@ -64,13 +65,13 @@ func (e *TextExtractor) parseNode(n *html.Node) Blocks {
 			b.Children.Add(&Block{
 				Type:   TextBlock,
 				Parent: b,
-				Data:   e.parseChildNodes(nil, n).String(e.format == "raw"),
+				Data:   e.parseChildNodes(nil, n, d).String(e.format == "raw"),
 			})
 			return blocks.Add(b)
 		case "img":
-			return blocks.Add(e.extractImage(n))
+			return blocks.Add(e.extractImage(n, d))
 		case "ol", "ul":
-			return blocks.Add(e.extractList(n)...)
+			return blocks.Add(e.extractList(n, d)...)
 		case "br":
 			return blocks.Add(&Block{
 				Type: NewLineBlock,
@@ -79,9 +80,9 @@ func (e *TextExtractor) parseNode(n *html.Node) Blocks {
 			b := &Block{
 				Tag:   n.Data,
 				Type:  ElementBlock,
-				Attrs: nodeAttrs(n, "href"),
+				Attrs: nodeAttrs(n, d, "href"),
 			}
-			b.Children = e.parseChildNodes(b, n)
+			b.Children = e.parseChildNodes(b, n, d)
 			return blocks.Add(b)
 		case "article", "aside", "blockquote", "dd", "div", "dl", "fieldset",
 			"figcaption", "figure", "footer", "form", "header", "hgroup",
@@ -90,11 +91,11 @@ func (e *TextExtractor) parseNode(n *html.Node) Blocks {
 				Tag:  n.Data,
 				Type: ElementBlock,
 			}
-			block.Children = e.parseChildNodes(block, n)
+			block.Children = e.parseChildNodes(block, n, d)
 
 			return blocks.Add(block)
 		default:
-			cs := e.parseChildNodes(nil, n).String(e.format == "raw")
+			cs := e.parseChildNodes(nil, n, d).String(e.format == "raw")
 			if cs != "" {
 				return blocks.Add(&Block{
 					Type: TextBlock,
@@ -123,11 +124,11 @@ func (e *TextExtractor) parseNode(n *html.Node) Blocks {
 	return blocks
 }
 
-func (e *TextExtractor) parseChildNodes(parent *Block, n *html.Node) Blocks {
+func (e *TextExtractor) parseChildNodes(parent *Block, n *html.Node, d document.Document) Blocks {
 	if n.Type == html.ElementNode {
 		blocks := Blocks{}
 		for c := n.FirstChild; c != nil; c = c.NextSibling {
-			for _, b := range e.parseNode(c) {
+			for _, b := range e.parseNode(c, d) {
 				b.Parent = parent
 				blocks = append(blocks, b)
 			}
@@ -138,25 +139,15 @@ func (e *TextExtractor) parseChildNodes(parent *Block, n *html.Node) Blocks {
 	}
 }
 
-func (e *TextExtractor) extractImage(n *html.Node) *Block {
-	attrs := map[string]string{}
-
-	// Collect attributes
-	for _, a := range n.Attr {
-		switch a.Key {
-		case "src", "width", "height":
-			attrs[a.Key] = a.Val
-		}
-	}
-
+func (e *TextExtractor) extractImage(n *html.Node, d document.Document) *Block {
 	return &Block{
 		Tag:   n.Data,
 		Type:  SelfClosingBlock,
-		Attrs: nodeAttrs(n, "src", "width", "height"),
+		Attrs: nodeAttrs(n, d, "src", "width", "height"),
 	}
 }
 
-func (e *TextExtractor) extractList(n *html.Node) Blocks {
+func (e *TextExtractor) extractList(n *html.Node, d document.Document) Blocks {
 	blocks := Blocks{}
 
 	currBlock := &Block{
@@ -167,7 +158,7 @@ func (e *TextExtractor) extractList(n *html.Node) Blocks {
 	// Collect list items
 	for c := n.FirstChild; c != nil; c = c.NextSibling {
 		if c.Type == html.ElementNode {
-			if cs := e.parseNode(c).String(e.format == "raw"); cs != "" {
+			if cs := e.parseNode(c, d).String(e.format == "raw"); cs != "" {
 				currBlock.Children = append(currBlock.Children, &Block{
 					Tag:  "li",
 					Type: ElementBlock,

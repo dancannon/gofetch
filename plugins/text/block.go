@@ -2,9 +2,13 @@ package text
 
 import (
 	"bytes"
-	"code.google.com/p/go.net/html"
 	"fmt"
+	"net/url"
 	"strings"
+
+	"github.com/dancannon/gofetch/document"
+
+	"code.google.com/p/go.net/html"
 )
 
 type BlockType uint32
@@ -190,13 +194,23 @@ func countDistinctWords(text string) int {
 	return count
 }
 
-func nodeAttrs(n *html.Node, keys ...string) map[string]string {
+func nodeAttrs(n *html.Node, d document.Document, keys ...string) map[string]string {
 	attrs := map[string]string{}
 
 	// Collect attributes
 	for _, a := range n.Attr {
 		if len(keys) == 0 || containsKey(keys, a.Key) {
-			attrs[a.Key] = a.Val
+			switch a.Key {
+			case "src":
+				// Attempt to fix URLs
+				urlr, err := url.Parse(a.Val)
+				if err != nil {
+					continue
+				}
+				attrs[a.Key] = d.URL.ResolveReference(urlr).String()
+			default:
+				attrs[a.Key] = a.Val
+			}
 		}
 	}
 
