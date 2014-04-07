@@ -21,7 +21,7 @@ var remoteTests = []struct {
 	{"http://getbootstrap.com/examples/starter-template/", "text"},
 	{"http://getbootstrap.com/examples/jumbotron/", "text"},
 	{"http://getbootstrap.com/examples/carousel/", "text"},
-	{"http://www.theguardian.com/technology/2013/nov/01/caa-easa-electronic-devices-flight-take-off-landing", "text"},
+	{"http://www.theguardian.com/technology/2013/nov/01/caa-easa-electronic-devices-flight-take-off-landing", "general"},
 	{"http://www.birmingham.ac.uk/index.aspx", "text"},
 	{"https://www.google.co.uk/?gws_rd=cr&ei=IMtzUuLkI-Hb0QX-woD4CA#q=test", "text"},
 	{"https://github.com/dancannon/gorethink/issues/51", "general"},
